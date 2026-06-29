@@ -311,7 +311,6 @@ export default function MerchantPage() {
                   <MetricRow
                     label="Avg Monthly Revenue"
                     value={formatNaira(metrics.summary.avg_monthly_revenue_naira * 100)}
-                    sub="kobo → naira display"
                     good={metrics.summary.avg_monthly_revenue_naira >= 5_000_000}
                   />
                   <MetricRow
@@ -328,19 +327,16 @@ export default function MerchantPage() {
                     label="Revenue Volatility"
                     value={formatPct(Math.round(metrics.summary.revenue_volatility_pct * 100))}
                     good={metrics.summary.revenue_volatility_pct <= 15}
-                    invert
                   />
                   <MetricRow
                     label="Debt Ratio"
                     value={formatPct(Math.round(metrics.summary.debt_ratio_pct * 100))}
                     good={metrics.summary.debt_ratio_pct <= 25}
-                    invert
                   />
                   <MetricRow
                     label="Customer Concentration"
                     value={formatPct(Math.round(metrics.summary.customer_concentration_pct * 100))}
                     good={metrics.summary.customer_concentration_pct <= 25}
-                    invert
                   />
                   <MetricRow
                     label="Missed Repayments"
@@ -457,15 +453,13 @@ function MetricRow({
   value,
   sub,
   good,
-  invert = false,
 }: {
   label: string;
   value: string;
   sub?: string;
   good: boolean;
-  invert?: boolean;
 }) {
-  const ok = invert ? good : good;
+  const ok = good;
   return (
     <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border">
       <div>

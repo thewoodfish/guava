@@ -53,6 +53,7 @@ export interface ProofPackage {
   circuit_id: string;
   proof_hex: string;
   vk_hex: string;
+  pub_inputs_hex: string;
   public_inputs: PublicInputs;
   predicates: ProvenPredicate[];
   created_at: string;
