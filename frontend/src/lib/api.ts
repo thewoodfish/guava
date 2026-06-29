@@ -11,10 +11,10 @@ function headers(extra?: Record<string, string>) {
   };
 }
 
-export async function uploadStatement(file: File, month: string): Promise<{ statement_id: string; status: string }> {
+export async function uploadStatement(file: File): Promise<{ statement_id: string; status: string }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${API}/upload-statement?month=${month}`, {
+  const res = await fetch(`${API}/upload-statement`, {
     method: "POST",
     headers: headers(),
     body: form,

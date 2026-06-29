@@ -17,5 +17,5 @@ pub struct Statement {
 
 #[derive(Debug, Deserialize)]
 pub struct UploadStatementQuery {
-    pub month: String,
+    pub month: Option<String>,
 }

@@ -25,13 +25,10 @@ const DEFAULT_POLICY = {
   required_account_age_months: 12,
 };
 
-const MONTHS = [
-  "2024-01", "2024-02", "2024-03", "2024-04", "2024-05", "2024-06",
-];
-
 export default function MerchantPage() {
   const [step, setStep] = useState<Step>("upload");
-  const [uploads, setUploads] = useState<{ month: string; file: File; status: string; id?: string }[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "uploaded" | "error">("idle");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [metrics, setMetrics] = useState<MetricsSummary | null>(null);
   const [proof, setProof] = useState<ProofPackage | null>(null);
@@ -40,34 +37,24 @@ export default function MerchantPage() {
   const [copied, setCopied] = useState(false);
 
   // ── Upload phase ─────────────────────────────────────────────────────────
-  const handleFileChange = (month: string, file: File | null) => {
-    if (!file) return;
-    setUploads((prev) => {
-      const filtered = prev.filter((u) => u.month !== month);
-      return [...filtered, { month, file, status: "pending" }];
-    });
-  };
-
   const handleUploadAll = async () => {
-    if (uploads.length === 0) {
-      setError("Please select at least one statement.");
+    if (!selectedFile) {
+      setError("Please select a statement file.");
       return;
     }
     setLoading(true);
     setError(null);
-    const updated = [...uploads];
-    for (let i = 0; i < updated.length; i++) {
-      try {
-        const res = await uploadStatement(updated[i].file, updated[i].month);
-        updated[i] = { ...updated[i], status: "uploaded", id: res.statement_id };
-      } catch (e: any) {
-        updated[i] = { ...updated[i], status: "error" };
-      }
+    setUploadStatus("uploading");
+    try {
+      await uploadStatement(selectedFile);
+      setUploadStatus("uploaded");
+      setTimeout(() => setStep("transactions"), 1500);
+    } catch (e: any) {
+      setUploadStatus("error");
+      setError(e.message ?? "Upload failed");
+    } finally {
+      setLoading(false);
     }
-    setUploads(updated);
-    setLoading(false);
-    // Wait for parsing (background job) then move on
-    setTimeout(() => setStep("transactions"), 2000);
   };
 
   // ── Transactions phase ────────────────────────────────────────────────────
@@ -168,61 +155,57 @@ export default function MerchantPage() {
         {step === "upload" && (
           <Card>
             <CardHeader>
-              <CardTitle>Upload Bank Statements</CardTitle>
+              <CardTitle>Upload Bank Statement</CardTitle>
               <CardDescription>
-                Upload up to 6 months of statements. They're parsed locally — only ZK proofs leave your device.
+                Upload your bank statement PDF. Transactions are extracted automatically — only ZK proofs leave your device.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-3">
-                {MONTHS.map((month) => {
-                  const upload = uploads.find((u) => u.month === month);
-                  return (
-                    <label
-                      key={month}
-                      className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors
-                        ${upload ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300"}`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm">{month}</p>
-                          {upload ? (
-                            <p className="text-xs text-slate-500 truncate max-w-[140px]">{upload.file.name}</p>
-                          ) : (
-                            <p className="text-xs text-slate-400">Click to select PDF</p>
-                          )}
-                        </div>
-                        {upload?.status === "uploaded" ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        ) : upload?.status === "error" ? (
-                          <XCircle className="h-5 w-5 text-red-500" />
-                        ) : upload ? (
-                          <Upload className="h-5 w-5 text-blue-500" />
-                        ) : (
-                          <Upload className="h-5 w-5 text-slate-300" />
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        className="hidden"
-                        onChange={(e) => handleFileChange(month, e.target.files?.[0] ?? null)}
-                      />
-                    </label>
-                  );
-                })}
-              </div>
+              <label
+                className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-10 cursor-pointer transition-colors
+                  ${selectedFile ? "border-blue-400 bg-blue-50" : "border-slate-200 hover:border-blue-300 hover:bg-slate-50"}`}
+              >
+                {uploadStatus === "uploaded" ? (
+                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                ) : uploadStatus === "error" ? (
+                  <XCircle className="h-10 w-10 text-red-400" />
+                ) : (
+                  <Upload className={`h-10 w-10 ${selectedFile ? "text-blue-500" : "text-slate-300"}`} />
+                )}
+                <div className="text-center">
+                  {selectedFile ? (
+                    <>
+                      <p className="font-medium text-sm text-slate-800">{selectedFile.name}</p>
+                      <p className="text-xs text-slate-400 mt-1">{(selectedFile.size / 1024).toFixed(0)} KB — click to change</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-medium text-sm text-slate-700">Click to select PDF</p>
+                      <p className="text-xs text-slate-400 mt-1">Bank statement covering up to 6 months</p>
+                    </>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    setSelectedFile(e.target.files?.[0] ?? null);
+                    setUploadStatus("idle");
+                  }}
+                />
+              </label>
 
               <Button
                 onClick={handleUploadAll}
-                disabled={loading || uploads.length === 0}
+                disabled={loading || !selectedFile}
                 className="w-full gap-2"
               >
                 {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                {loading ? "Uploading & Parsing..." : `Upload ${uploads.length} Statement${uploads.length !== 1 ? "s" : ""}`}
+                {loading ? "Uploading & Parsing..." : "Upload Statement"}
               </Button>
 
-              {uploads.some((u) => u.status === "uploaded") && (
+              {uploadStatus === "uploaded" && (
                 <Button variant="outline" onClick={() => setStep("transactions")} className="w-full">
                   Continue to Transactions
                 </Button>

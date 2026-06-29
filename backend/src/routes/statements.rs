@@ -47,8 +47,11 @@ pub async fn upload(
         return Err(AppError::BadRequest("No file provided".to_string()));
     }
 
-    // Validate month format YYYY-MM
-    if !is_valid_month(&q.month) {
+    let month = q.month.unwrap_or_else(|| {
+        chrono::Utc::now().format("%Y-%m").to_string()
+    });
+
+    if !is_valid_month(&month) {
         return Err(AppError::BadRequest(
             "month must be in YYYY-MM format".to_string(),
         ));
@@ -61,14 +64,13 @@ pub async fn upload(
     )
     .bind(merchant_id)
     .bind(&filename)
-    .bind(&q.month)
+    .bind(&month)
     .fetch_one(&state.db)
     .await?;
 
     // Parse PDF → transactions asynchronously (fire and forget for UX, then update)
     let db = state.db.clone();
     let config = state.config.clone();
-    let month = q.month.clone();
 
     tokio::spawn(async move {
         match run_parse(stmt_id, merchant_id, &month, &pdf_bytes, &config, &db).await {
