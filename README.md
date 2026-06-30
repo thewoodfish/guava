@@ -4,7 +4,7 @@
 
 LedgerProof is a privacy-preserving SME lending protocol. Businesses prove they meet loan criteria using zero-knowledge proofs — without handing over a single bank statement, customer name, or balance figure.
 
-Lenders publish underwriting policies on-chain. Borrowers generate UltraHonk zero-knowledge proofs off-chain. A deployed Soroban smart contract on Stellar testnet records every verified loan decision immutably. No financial documents change hands.
+Stellar is the settlement layer for the entire underwriting process — not a logging endpoint bolted on at the end. When a lender publishes their criteria, those criteria are stored on-chain via `publish_policy()`. When a borrower's ZK proof is verified, the decision is recorded on-chain via `record_decision()`, anchored to the exact criteria the lender committed to. The chain of trust is complete, auditable, and immutable at both ends. No financial documents change hands at any point.
 
 ---
 
@@ -96,8 +96,16 @@ Borrower uploads bank statement (XLSX)
             ▼
   Soroban contract on Stellar testnet
   CCWTTKOPDCVTZ2GO3MUUHE4GAR4MDFSZQDU6NRCVM4M5BTNUVRPEWVU7
-  record_decision() — re-checks policy on-chain,
-  stores proof hash + decision immutably
+
+  record_decision(proof_id, proof_hash, public_inputs, policy, decision)
+  ↳ re-verifies policy on-chain against the proven thresholds
+  ↳ stores proof hash + public inputs + decision immutably
+  ↳ returns Stellar tx hash → displayed in lender UI
+
+  Note: publish_policy() was called earlier, when the lender published
+  their criteria. That transaction anchored the policy to Stellar before
+  any application was made. record_decision() references those same
+  committed thresholds — closing the audit loop.
             │
        ┌────┴────┐
     Approved   Rejected
@@ -134,9 +142,11 @@ Applications are tracked per lender with live status (Pending → Approved / Rej
 
 ---
 
-### Lender — Configure ZK Lending Policy
+### Lender — Configure & Publish ZK Lending Policy On-Chain
 
-The lender publishes an underwriting policy: minimum thresholds and maximum tolerances expressed as integers (kobo, basis points). The live Naira/percentage hint updates as the lender types. These values become the public inputs committed into the ZK circuit.
+The lender sets their underwriting criteria — minimum revenue, minimum balance, maximum volatility — and clicks **Save & Publish**. The backend immediately calls `publish_policy()` on the deployed Soroban contract, writing the 8-field policy to Stellar persistent storage. A "Lending Criteria Published on Stellar" card appears with the policy transaction hash and a link to Stellar Expert.
+
+This happens **before any borrower applies**. The lender's criteria are public, immutable, and verifiably on-chain from the moment they publish — not assembled retroactively after a decision is made.
 
 ![Lender policy configuration](frontend/assets/Screenshot%202026-06-30%20at%2001.53.58.png)
 
@@ -216,7 +226,8 @@ If all constraints hold, Barretenberg generates a valid **UltraHonk proof** (~14
 | Verification key | `bb write_vk --scheme ultra_honk` | Derives the key used to verify proofs for this circuit |
 | Proof generation | `bb prove --scheme ultra_honk` | Constructs the UltraHonk cryptographic proof |
 | Cryptographic verification | `bb verify --scheme ultra_honk` | Verifies the proof off-chain (Soroban CPU budget cannot fit UltraHonk) |
-| On-chain recording | Soroban contract — `record_decision()` | Re-checks policy, stores proof hash + decision immutably on Stellar |
+| Policy publish | Soroban contract — `publish_policy()` | Lender commits underwriting criteria on-chain **before** any application is made |
+| On-chain decision | Soroban contract — `record_decision()` | Re-checks that proven thresholds satisfy the published policy; stores proof hash + decision immutably on Stellar |
 
 ### What the Lender Sees
 
@@ -301,9 +312,15 @@ No amounts. No customer names. No transaction descriptions. No account numbers.
 │           Soroban Smart Contract (Stellar testnet)      │
 │                                                         │
 │  CCWTTKOPDCVTZ2GO3MUUHE4GAR4MDFSZQDU6NRCVM4M5BTNUVRPEWVU7  │
-│  record_decision() — re-verifies policy on-chain,      │
-│  stores proof hash + public inputs + decision           │
-│  Returns Stellar tx hash → shown in lender UI          │
+│                                                         │
+│  publish_policy(lender_id, policy)                      │
+│  ↳ called when lender publishes their profile          │
+│  ↳ stores 8-field criteria on-chain before any loan    │
+│                                                         │
+│  record_decision(proof_id, proof_hash, inputs, decision)│
+│  ↳ called after bb verify passes                       │
+│  ↳ re-checks policy, stores decision immutably         │
+│  ↳ returns Stellar tx hash → shown in lender UI        │
 └─────────────────────────────────────────────────────────┘
 ```
 
