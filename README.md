@@ -585,25 +585,30 @@ POST /verify-proof     { proof_package }             → { verified: bool }
 
 ### Known Limitations
 
-| Limitation | Notes |
-|---|---|
-| Some metrics are pre-computed off-chain | Revenue volatility, customer concentration, and debt ratio are computed by the Rust engine and passed as private witnesses. A dishonest prover could misrepresent them. Production hardening requires computing them inside the circuit or attesting them from a trusted oracle. |
-| Single concurrent proof | The proof lock serialises all proof requests. At scale, a dedicated proving cluster would generate proofs in parallel. |
-| UltraHonk verification is off-chain | Soroban's CPU instruction budget cannot fit a full UltraHonk verification for a 14 KB proof. The `bb verify` step runs off-chain; the on-chain contract records the result and re-checks the policy. This matches how production ZK rollups work — verify off-chain, settle on-chain. |
-| XLSX format assumption | The parser expects a specific column layout from Nigerian bank XLSX exports. Additional parsers per bank format are a Phase 2 item. |
+> **This is a hackathon POC.** The core ZK proof pipeline and Soroban integration are real and working end-to-end. The data ingestion layer is intentionally simplified for the demo.
+
+| Limitation | Why it matters | Production path |
+|---|---|---|
+| **Manual XLSX upload** | The biggest weakness of this MVP. A borrower uploads their own bank statement — which means the data is self-reported. A dishonest borrower could submit a doctored file. ZK proofs guarantee the *math* is correct, but they cannot guarantee the *input data* is authentic if that data comes from the user. | **Open Banking** (Mono, Okra, CBN Open Banking APIs) — the bank pushes the statement directly to LedgerProof via a regulated API. The borrower authorises access; the bank transmits the data. No file ever touches the borrower's hands, so forgery is structurally impossible. |
+| **UX friction** | Exporting an XLSX from a Nigerian bank app, locating the file, and uploading it is not a flow that scales to 40 million MSMEs. Most borrowers will drop off. | Open Banking eliminates this entirely — one tap to authorise, automatic data pull. |
+| **Some metrics are pre-computed off-chain** | Revenue volatility, customer concentration, and debt ratio are computed by the Rust engine and passed as private witnesses. A dishonest prover could misrepresent them. | Compute inside the circuit, or attest from a trusted Open Banking oracle. |
+| **Single concurrent proof** | The proof lock serialises all proof requests. | Dedicated proving cluster at scale. |
+| **UltraHonk verification is off-chain** | Soroban's CPU instruction budget cannot fit a full UltraHonk verification for a 14 KB proof. `bb verify` runs off-chain; the Soroban contract records the result and re-checks the policy. | This is the correct architecture — identical to how production ZK rollups work (verify off-chain, settle on-chain). Not a limitation to fix. |
 
 ---
 
 ## Roadmap
 
-### ✅ Phase 1 — MVP (current)
+### ✅ Phase 1 — Hackathon POC (current)
+
+**Data ingestion:** Manual XLSX upload — borrower exports their bank statement and uploads it. This is a deliberate simplification for the demo. It proves the ZK circuit, the proof pipeline, and the Soroban integration work end-to-end. It does not solve data authenticity at scale.
 
 - XLSX bank statement upload and parsing
 - 8-metric ZK circuit (Noir + Barretenberg UltraHonk)
 - JWT auth with borrower and lender roles
 - Lender policy configuration and publishing
 - Borrower application flow with anonymised lender view
-- On-chain loan decision recording via deployed Soroban contract on Stellar testnet
+- On-chain loan decision recording via deployed Soroban smart contract on Stellar testnet
 
 ---
 
@@ -619,11 +624,15 @@ Before building further, we talk to real people.
 
 ---
 
-### Phase 3 — Open Banking Integration
+### Phase 3 — Open Banking Integration _(closes the forgery gap)_
 
-- Direct bank feed via Mono, Okra, or CBN Open Banking APIs — no file upload required
-- Automatic statement sync with merchant consent
+The most critical engineering step after the POC. Manual XLSX upload is unforgeable in theory but self-reported in practice. Open Banking makes the data source trustworthy.
+
+- Direct bank feed via **Mono**, **Okra**, or **CBN Open Banking APIs** — the bank pushes the statement directly; no file ever passes through the borrower's hands
+- Borrower authorises with one tap; LedgerProof receives a certified transaction feed
+- Forgery becomes structurally impossible — data provenance is the bank, not the borrower
 - Support for multi-bank accounts (common among Nigerian SMEs)
+- Once the data source is trusted, the ZK proofs become fully trustworthy end-to-end
 
 ---
 
