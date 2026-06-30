@@ -479,6 +479,59 @@ export default function LenderDashboard() {
                                     </div>
                                   </div>
                                 )}
+
+                                {/* Stellar on-chain record */}
+                                {result.stellar && (
+                                  <div className="bg-blue-950/30 border border-blue-800/40 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <Globe className="h-4 w-4 text-blue-400" />
+                                      <p className="text-xs font-mono text-blue-400 uppercase tracking-widest">
+                                        Stellar On-Chain Record
+                                      </p>
+                                    </div>
+                                    <div className="grid gap-2 text-xs font-mono">
+                                      <MetaRow
+                                        icon={<Globe className="h-3.5 w-3.5 text-blue-400" />}
+                                        label="Network"
+                                        value={`Stellar ${result.stellar.network}`}
+                                      />
+                                      <MetaRow
+                                        icon={<FileCode2 className="h-3.5 w-3.5 text-blue-400" />}
+                                        label="Contract"
+                                        value={result.stellar.contract_id}
+                                        mono copyable
+                                      />
+                                      {result.stellar.tx_hash ? (
+                                        <>
+                                          <MetaRow
+                                            icon={<Hash className="h-3.5 w-3.5 text-green-400" />}
+                                            label="Transaction hash"
+                                            value={result.stellar.tx_hash}
+                                            mono copyable
+                                          />
+                                          {result.stellar.explorer_url && (
+                                            <div className="pt-1">
+                                              <a
+                                                href={result.stellar.explorer_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                                              >
+                                                <Globe className="h-3 w-3" />
+                                                View on Stellar Expert →
+                                              </a>
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : (
+                                        <div className="flex items-center gap-2 text-amber-400 text-xs">
+                                          <AlertTriangle className="h-3.5 w-3.5" />
+                                          On-chain recording pending or unavailable
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
                               </>
                             )}
                           </div>

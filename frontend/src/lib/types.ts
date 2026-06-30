@@ -130,11 +130,19 @@ export interface ProofDetail {
   public_inputs: PublicInputs;
 }
 
+export interface StellarRecord {
+  tx_hash: string | null;
+  explorer_url: string | null;
+  contract_id: string;
+  network: string;
+}
+
 export interface VerifyResult {
   application_id: string;
   status: string;
   decision_reason: string;
   proof_verified: boolean;
   predicates: ProvenPredicate[];
+  stellar?: StellarRecord;
   proof?: ProofDetail;
 }

@@ -244,9 +244,22 @@ pub async fn verify(
     let circuits_dir2 = state.config.circuits_dir.clone();
     let package_clone = package.clone();
     let policy_clone2 = policy.clone();
+    let soroban_contract = state.config.soroban_contract_id.clone();
+    let stellar_identity = state.config.stellar_identity.clone();
+    let stellar_network = state.config.stellar_network.clone();
 
     let decision = tokio::task::spawn_blocking(move || {
-        loan_engine::evaluate(app_id, &package_clone, &policy_clone2, &circuits_dir2)
+        loan_engine::evaluate(
+            app_id,
+            &package_clone,
+            &policy_clone2,
+            &circuits_dir2,
+            &loan_engine::SorobanConfig {
+                contract_id: &soroban_contract,
+                identity: &stellar_identity,
+                network: &stellar_network,
+            },
+        )
     })
     .await
     .map_err(|e| AppError::Internal(anyhow::anyhow!(e.to_string())))?
@@ -268,12 +281,22 @@ pub async fn verify(
     let proof_hash_preview = &package.proof_hex[..package.proof_hex.len().min(64)];
     let vk_hash_preview = &package.vk_hex[..package.vk_hex.len().min(32)];
 
+    let stellar_explorer = decision.stellar_tx_hash.as_deref().map(|h| {
+        format!("https://stellar.expert/explorer/testnet/tx/{}", h)
+    });
+
     Ok(Json(json!({
         "application_id": app_id,
         "status": decision.decision,
         "decision_reason": decision.reason,
         "proof_verified": decision.proof_verified,
         "predicates": package.predicates,
+        "stellar": {
+            "tx_hash": decision.stellar_tx_hash,
+            "explorer_url": stellar_explorer,
+            "contract_id": state.config.soroban_contract_id,
+            "network": state.config.stellar_network,
+        },
         "proof": {
             "id": package.proof_id,
             "circuit_id": package.circuit_id,

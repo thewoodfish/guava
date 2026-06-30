@@ -2,18 +2,25 @@ use crate::models::{
     metrics::LendingPolicy,
     proof::{LoanDecision, ProofPackage},
 };
-use crate::services::proof_gen;
+use crate::services::{proof_gen, soroban};
 use anyhow::Result;
 use uuid::Uuid;
 
-/// Verify a proof package and evaluate the loan decision.
+pub struct SorobanConfig<'a> {
+    pub contract_id: &'a str,
+    pub identity: &'a str,
+    pub network: &'a str,
+}
+
+/// Verify a proof package, evaluate the loan decision, and record it on Stellar.
 pub fn evaluate(
     application_id: Uuid,
     package: &ProofPackage,
-    _policy: &LendingPolicy,
+    policy: &LendingPolicy,
     circuits_dir: &str,
+    soroban: &SorobanConfig,
 ) -> Result<LoanDecision> {
-    // Cryptographic proof verification
+    // 1. Cryptographic proof verification (off-chain, bb verify)
     let proof_verified = match proof_gen::verify(package, circuits_dir) {
         Ok(v) => v,
         Err(e) => {
@@ -30,10 +37,11 @@ pub fn evaluate(
             proof_verified: false,
             policy_met: false,
             failed_predicates: vec!["proof_invalid".to_string()],
+            stellar_tx_hash: None,
         });
     }
 
-    // Policy check against proven predicates
+    // 2. Policy check against proven predicates
     let failed: Vec<String> = package
         .predicates
         .iter()
@@ -51,11 +59,28 @@ pub fn evaluate(
     } else {
         (
             "rejected".to_string(),
-            format!(
-                "The following criteria were not met: {}",
-                failed.join(", ")
-            ),
+            format!("The following criteria were not met: {}", failed.join(", ")),
         )
+    };
+
+    // 3. Record decision on Stellar testnet (non-blocking on failure)
+    let stellar_tx_hash = match soroban::record_decision_on_chain(
+        package.proof_id,
+        &package.proof_hex,
+        policy,
+        &decision,
+        soroban.contract_id,
+        soroban.identity,
+        soroban.network,
+    ) {
+        Ok(hash) => {
+            tracing::info!("Decision recorded on Stellar: {}", hash);
+            Some(hash)
+        }
+        Err(e) => {
+            tracing::error!("Failed to record on Stellar (non-fatal): {}", e);
+            None
+        }
     };
 
     Ok(LoanDecision {
@@ -65,5 +90,6 @@ pub fn evaluate(
         proof_verified,
         policy_met,
         failed_predicates: failed,
+        stellar_tx_hash,
     })
 }

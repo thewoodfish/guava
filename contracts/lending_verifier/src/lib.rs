@@ -1,19 +1,24 @@
 //! LedgerProof Lending Verifier — Soroban Smart Contract
 //!
-//! Responsibilities:
-//! 1. Verify a UltraHonk ZK proof submitted by the lending frontend
-//! 2. Evaluate the lender's on-chain policy against the proven public inputs
-//! 3. Record the loan decision on-chain
+//! Records cryptographically-verified loan decisions on Stellar.
 //!
-//! The UltraHonk verification is delegated to the deployed
-//! `indextree/ultrahonk_soroban_contract` verifier. This contract calls
-//! that verifier cross-contract and interprets the result.
+//! The UltraHonk proof is verified off-chain by the Barretenberg `bb verify`
+//! tool (computationally infeasible within Soroban's instruction budget).
+//! This contract receives the verified result and records it immutably:
+//!   - Proof hash (first 32 bytes of the UltraHonk proof)
+//!   - Proven public inputs (the lender's committed thresholds)
+//!   - Loan decision (APPROVED / REJECTED)
+//!   - Lender address
+//!   - Timestamp (ledger)
+//!
+//! Anyone can look up a proof_id to confirm the on-chain record matches
+//! the proof package they received off-chain.
 
 #![no_std]
 
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype,
-    Address, Bytes, BytesN, Env, IntoVal, Symbol,
+    symbol_short, Address, Bytes, BytesN, Env, Symbol,
     log, panic_with_error,
 };
 
@@ -23,11 +28,9 @@ use soroban_sdk::{
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum Error {
-    ProofVerificationFailed = 1,
-    PolicyNotSatisfied = 2,
-    InvalidInput = 3,
-    Unauthorized = 4,
-    AlreadyInitialized = 5,
+    PolicyNotSatisfied = 1,
+    InvalidInput = 2,
+    AlreadyRecorded = 3,
 }
 
 // ── Storage types ──────────────────────────────────────────────────────────
@@ -35,24 +38,17 @@ pub enum Error {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct LendingPolicy {
-    /// Minimum average monthly revenue (kobo)
     pub required_monthly_revenue: u64,
-    /// Minimum average balance (kobo)
     pub required_avg_balance: u64,
-    /// Minimum positive cash-flow months (0–6)
     pub required_positive_cf_months: u64,
-    /// Maximum revenue volatility in basis points
     pub max_revenue_volatility_bps: u64,
-    /// Maximum customer concentration in basis points
     pub max_customer_concentration_bps: u64,
-    /// Maximum debt ratio in basis points
     pub max_debt_ratio_bps: u64,
-    /// 1 = require no missed repayments
     pub require_no_missed_repayments: u64,
-    /// Minimum account age in months
     pub required_account_age_months: u64,
 }
 
+/// Public inputs committed into the ZK proof (the lender's thresholds).
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct PublicInputs {
@@ -68,18 +64,14 @@ pub struct PublicInputs {
 
 #[contracttype]
 #[derive(Clone, Debug)]
-pub struct LoanApplication {
-    pub merchant_id: BytesN<32>,
-    pub proof_id: BytesN<32>,
+pub struct LoanRecord {
+    /// First 32 bytes of the UltraHonk proof (fingerprint)
+    pub proof_hash: BytesN<32>,
     pub lender: Address,
     pub decision: Symbol,
+    pub public_inputs: PublicInputs,
     pub verified_at: u64,
 }
-
-// ── Storage keys ──────────────────────────────────────────────────────────
-
-const VERIFIER_KEY: Symbol = Symbol::short("VERIFIER");
-const ADMIN_KEY: Symbol = Symbol::short("ADMIN");
 
 // ── Contract ───────────────────────────────────────────────────────────────
 
@@ -88,108 +80,59 @@ pub struct LendingVerifier;
 
 #[contractimpl]
 impl LendingVerifier {
-    // ── Admin ────────────────────────────────────────────────────────────
-
-    /// Initialize the contract with the UltraHonk verifier contract address.
-    /// Can only be called once.
-    pub fn initialize(env: Env, admin: Address, verifier_contract: Address) {
-        if env.storage().instance().has(&ADMIN_KEY) {
-            panic_with_error!(&env, Error::AlreadyInitialized);
-        }
-        env.storage().instance().set(&ADMIN_KEY, &admin);
-        env.storage().instance().set(&VERIFIER_KEY, &verifier_contract);
-    }
-
-    // ── Core loan evaluation ──────────────────────────────────────────────
-
-    /// Evaluate a loan application.
+    /// Record a verified loan decision on-chain.
     ///
-    /// Steps:
-    /// 1. Verify the UltraHonk proof against the circuit VK
-    /// 2. Assert the proven public inputs satisfy the lender's on-chain policy
-    /// 3. Record the decision in contract storage
-    /// 4. Return the decision symbol: `APPROVED` or `REJECTED`
-    pub fn evaluate_loan(
+    /// Called by the LedgerProof backend after `bb verify` confirms the
+    /// UltraHonk proof is valid. The lender must sign this transaction.
+    ///
+    /// proof_id        — UUID v4 bytes (16 bytes) used as the storage key
+    /// proof_hash      — first 32 bytes of the proof hex (fingerprint)
+    /// public_inputs   — 8 × u64 ABI-encoded (big-endian, 8 bytes each = 64 bytes)
+    /// policy          — the lender's on-chain policy (verified against public inputs)
+    /// decision        — "APPROVED" or "REJECTED"
+    pub fn record_decision(
         env: Env,
         lender: Address,
-        merchant_id: BytesN<32>,
-        proof_id: BytesN<32>,
-        proof: Bytes,
-        vk: Bytes,
+        proof_id: BytesN<16>,
+        proof_hash: BytesN<32>,
         public_inputs_bytes: Bytes,
         policy: LendingPolicy,
+        decision: Symbol,
     ) -> Symbol {
         lender.require_auth();
 
-        // ── 1. Verify ZK proof ──────────────────────────────────────────
-        let verified = Self::verify_ultrahonk(&env, &proof, &vk, &public_inputs_bytes);
-        if !verified {
-            log!(&env, "ZK proof verification failed for merchant {}", merchant_id);
-            // Record rejection
-            Self::record_decision(
-                &env,
-                &merchant_id,
-                &proof_id,
-                &lender,
-                Symbol::new(&env, "REJECTED"),
-            );
-            panic_with_error!(&env, Error::ProofVerificationFailed);
+        // Reject duplicate recordings for the same proof
+        if env.storage().persistent().has(&proof_id) {
+            panic_with_error!(&env, Error::AlreadyRecorded);
         }
 
-        // ── 2. Decode public inputs and check policy ──────────────────
-        // Public inputs are ABI-encoded as 8 × u64 (big-endian, 8 bytes each)
+        // Decode and verify that the proven thresholds satisfy the policy
         let inputs = Self::decode_public_inputs(&env, &public_inputs_bytes);
-
-        // The circuit public inputs MUST match or be stricter than the lender's policy.
-        // This prevents a merchant reusing a proof generated under a laxer policy.
         Self::assert_policy_satisfied(&env, &inputs, &policy);
 
-        // ── 3. Record approval ────────────────────────────────────────
-        Self::record_decision(
-            &env,
-            &merchant_id,
-            &proof_id,
-            &lender,
-            Symbol::new(&env, "APPROVED"),
-        );
+        let record = LoanRecord {
+            proof_hash,
+            lender: lender.clone(),
+            decision: decision.clone(),
+            public_inputs: inputs,
+            verified_at: env.ledger().timestamp(),
+        };
 
-        log!(&env, "Loan APPROVED for merchant {}", merchant_id);
-        Symbol::new(&env, "APPROVED")
+        env.storage().persistent().set(&proof_id, &record);
+
+        log!(&env, "LedgerProof: {} decision recorded for proof {:?}", decision, proof_id);
+
+        decision
     }
 
-    /// Retrieve a recorded loan decision.
-    pub fn get_decision(env: Env, proof_id: BytesN<32>) -> Option<LoanApplication> {
+    /// Retrieve a recorded loan decision by proof_id.
+    pub fn get_record(env: Env, proof_id: BytesN<16>) -> Option<LoanRecord> {
         env.storage().persistent().get(&proof_id)
     }
 
-    // ── Internals ─────────────────────────────────────────────────────────
-
-    fn verify_ultrahonk(env: &Env, proof: &Bytes, vk: &Bytes, public_inputs: &Bytes) -> bool {
-        // Cross-contract call to the deployed UltraHonk verifier.
-        // The verifier contract (indextree/ultrahonk_soroban_contract) exposes:
-        //   fn verify(proof: Bytes, vk: Bytes, public_inputs: Bytes) -> bool
-        let verifier: Address = env
-            .storage()
-            .instance()
-            .get(&VERIFIER_KEY)
-            .expect("verifier not set");
-
-        let result: bool = env.invoke_contract(
-            &verifier,
-            &Symbol::new(env, "verify"),
-            soroban_sdk::vec![
-                env,
-                proof.into_val(env),
-                vk.into_val(env),
-                public_inputs.into_val(env),
-            ],
-        );
-
-        result
-    }
+    // ── Internal helpers ───────────────────────────────────────────────────
 
     fn decode_public_inputs(env: &Env, bytes: &Bytes) -> PublicInputs {
-        // Each u64 is stored as 8 big-endian bytes → 8 values = 64 bytes minimum
         if bytes.len() < 64 {
             panic_with_error!(env, Error::InvalidInput);
         }
@@ -203,20 +146,20 @@ impl LendingVerifier {
         };
 
         PublicInputs {
-            required_monthly_revenue:     read_u64(0),
-            required_avg_balance:         read_u64(8),
-            required_positive_cf_months:  read_u64(16),
-            max_revenue_volatility_bps:   read_u64(24),
-            max_customer_concentration_bps: read_u64(32),
-            max_debt_ratio_bps:           read_u64(40),
-            require_no_missed_repayments: read_u64(48),
-            required_account_age_months:  read_u64(56),
+            required_monthly_revenue:          read_u64(0),
+            required_avg_balance:              read_u64(8),
+            required_positive_cf_months:       read_u64(16),
+            max_revenue_volatility_bps:        read_u64(24),
+            max_customer_concentration_bps:    read_u64(32),
+            max_debt_ratio_bps:                read_u64(40),
+            require_no_missed_repayments:      read_u64(48),
+            required_account_age_months:       read_u64(56),
         }
     }
 
     fn assert_policy_satisfied(env: &Env, inputs: &PublicInputs, policy: &LendingPolicy) {
-        // The proven thresholds in the proof must be AT LEAST as strict as what the lender requires.
-        // If a proof was generated for a laxer policy, it cannot be reused here.
+        // The proven thresholds in the proof must be at least as strict as the lender's policy.
+        // This prevents reusing a proof generated under a laxer policy.
         let ok = inputs.required_monthly_revenue >= policy.required_monthly_revenue
             && inputs.required_avg_balance >= policy.required_avg_balance
             && inputs.required_positive_cf_months >= policy.required_positive_cf_months
@@ -231,25 +174,6 @@ impl LendingVerifier {
             panic_with_error!(env, Error::PolicyNotSatisfied);
         }
     }
-
-    fn record_decision(
-        env: &Env,
-        merchant_id: &BytesN<32>,
-        proof_id: &BytesN<32>,
-        lender: &Address,
-        decision: Symbol,
-    ) {
-        let app = LoanApplication {
-            merchant_id: merchant_id.clone(),
-            proof_id: proof_id.clone(),
-            lender: lender.clone(),
-            decision,
-            verified_at: env.ledger().timestamp(),
-        };
-        env.storage()
-            .persistent()
-            .set(proof_id, &app);
-    }
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────
@@ -259,20 +183,34 @@ mod tests {
     use super::*;
     use soroban_sdk::{testutils::Address as _, Env};
 
-    #[test]
-    fn test_policy_satisfied() {
-        let env = Env::default();
+    fn make_public_inputs_bytes(env: &Env, inputs: &[u64; 8]) -> Bytes {
+        let mut buf = [0u8; 64];
+        let mut i = 0;
+        for val in inputs {
+            for b in val.to_be_bytes() {
+                buf[i] = b;
+                i += 1;
+            }
+        }
+        Bytes::from_slice(env, &buf)
+    }
 
-        let inputs = PublicInputs {
-            required_monthly_revenue: 600_000_000,     // ₦6M (stricter than ₦5M policy)
-            required_avg_balance: 60_000_000,          // ₦600k (stricter than ₦500k)
-            required_positive_cf_months: 5,
-            max_revenue_volatility_bps: 1200,          // 12% (stricter than 15% max)
-            max_customer_concentration_bps: 2000,
-            max_debt_ratio_bps: 2000,
-            require_no_missed_repayments: 1,
-            required_account_age_months: 24,
-        };
+    #[test]
+    fn test_record_and_retrieve() {
+        let env = Env::default();
+        env.mock_all_auths();
+
+        let contract_id = env.register(LendingVerifier, ());
+        let client = LendingVerifierClient::new(&env, &contract_id);
+
+        let lender = Address::generate(&env);
+        let proof_id = BytesN::from_array(&env, &[1u8; 16]);
+        let proof_hash = BytesN::from_array(&env, &[2u8; 32]);
+
+        let inputs_raw: [u64; 8] = [
+            600_000_000, 60_000_000, 5, 1200, 2000, 2000, 1, 24,
+        ];
+        let public_inputs_bytes = make_public_inputs_bytes(&env, &inputs_raw);
 
         let policy = LendingPolicy {
             required_monthly_revenue: 500_000_000,
@@ -285,25 +223,38 @@ mod tests {
             required_account_age_months: 12,
         };
 
-        // Should not panic
-        LendingVerifier::assert_policy_satisfied(&env, &inputs, &policy);
+        let decision = client.record_decision(
+            &lender,
+            &proof_id,
+            &proof_hash,
+            &public_inputs_bytes,
+            &policy,
+            &symbol_short!("APPROVED"),
+        );
+
+        assert_eq!(decision, symbol_short!("APPROVED"));
+
+        let record = client.get_record(&proof_id).unwrap();
+        assert_eq!(record.decision, symbol_short!("APPROVED"));
+        assert_eq!(record.proof_hash, proof_hash);
     }
 
     #[test]
     #[should_panic]
-    fn test_policy_not_satisfied_low_revenue() {
+    fn test_policy_not_satisfied() {
         let env = Env::default();
+        env.mock_all_auths();
 
-        let inputs = PublicInputs {
-            required_monthly_revenue: 300_000_000,   // ₦3M — below ₦5M policy
-            required_avg_balance: 60_000_000,
-            required_positive_cf_months: 5,
-            max_revenue_volatility_bps: 1200,
-            max_customer_concentration_bps: 2000,
-            max_debt_ratio_bps: 2000,
-            require_no_missed_repayments: 1,
-            required_account_age_months: 24,
-        };
+        let contract_id = env.register(LendingVerifier, ());
+        let client = LendingVerifierClient::new(&env, &contract_id);
+
+        let lender = Address::generate(&env);
+        let proof_id = BytesN::from_array(&env, &[3u8; 16]);
+        let proof_hash = BytesN::from_array(&env, &[4u8; 32]);
+
+        // Revenue too low — 300M vs 500M required
+        let inputs_raw: [u64; 8] = [300_000_000, 60_000_000, 5, 1200, 2000, 2000, 1, 24];
+        let public_inputs_bytes = make_public_inputs_bytes(&env, &inputs_raw);
 
         let policy = LendingPolicy {
             required_monthly_revenue: 500_000_000,
@@ -316,6 +267,13 @@ mod tests {
             required_account_age_months: 12,
         };
 
-        LendingVerifier::assert_policy_satisfied(&env, &inputs, &policy);
+        client.record_decision(
+            &lender,
+            &proof_id,
+            &proof_hash,
+            &public_inputs_bytes,
+            &policy,
+            &symbol_short!("APPROVED"),
+        );
     }
 }

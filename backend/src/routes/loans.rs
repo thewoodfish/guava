@@ -36,8 +36,22 @@ pub async fn evaluate(
     let circuits_dir = state.config.circuits_dir.clone();
     let package = req.proof_package.clone();
 
+    let soroban_contract = state.config.soroban_contract_id.clone();
+    let stellar_identity = state.config.stellar_identity.clone();
+    let stellar_network = state.config.stellar_network.clone();
+
     let decision = tokio::task::spawn_blocking(move || {
-        loan_engine::evaluate(application_id, &package, &policy, &circuits_dir)
+        loan_engine::evaluate(
+            application_id,
+            &package,
+            &policy,
+            &circuits_dir,
+            &loan_engine::SorobanConfig {
+                contract_id: &soroban_contract,
+                identity: &stellar_identity,
+                network: &stellar_network,
+            },
+        )
     })
     .await
     .map_err(|e| AppError::Internal(anyhow::anyhow!(e.to_string())))?
