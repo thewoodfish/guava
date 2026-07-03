@@ -2,7 +2,7 @@
 
 > **Prove financial health. Not financial history.**
 
-Guava is a privacy-preserving SME lending protocol. Businesses prove they meet loan criteria using zero-knowledge proofs — without handing over a single bank statement, customer name, or balance figure.
+Guava is a privacy-preserving SME lending product. Businesses prove they meet loan criteria using zero-knowledge proofs — without handing over a single bank statement, customer name, or balance figure.
 
 Stellar is the settlement layer for the entire underwriting process — not a logging endpoint bolted on at the end. When a lender publishes their criteria, those criteria are stored on-chain via `publish_policy()`. When a borrower's ZK proof is verified, the decision is recorded on-chain via `record_decision()`, anchored to the exact criteria the lender committed to. The chain of trust is complete, auditable, and immutable at both ends. No financial documents change hands at any point.
 
@@ -89,6 +89,18 @@ A lender asks:
 The borrower proves those statements cryptographically—without revealing bank balances, customer names, transaction histories, or any other financial details.
 
 Credit should be based on **provable financial behaviour**, not paperwork.
+
+---
+
+## Who Lends on Guava?
+
+Guava is designed for the lenders that already serve local business communities: microfinance banks, small commercial banks, credit unions, cooperatives, merchant cash advance providers, and local financial services institutions.
+
+These lenders do not all have the same risk appetite. A microfinance bank may fund early-stage traders at a higher rate. A local bank may offer cheaper credit to businesses with longer account history and steadier cash flow. Guava does not force one universal interest rate. Instead, each lender publishes its own underwriting policy and prices the loan according to the risk it is willing to take.
+
+That matters because financial inclusion does not mean pretending risk does not exist. It means giving lenders better proof so they can price risk more fairly. A borrower with strong verifiable cash flow should not be priced like an unknown borrower simply because they lack audited accounts or collateral.
+
+Guava gives lenders privacy-preserving underwriting signals. The roadmap extends this with better risk reduction: trusted data feeds, richer proofs, and eventually collateralization models that can lower lender exposure and make cheaper credit possible.
 
 ---
 
@@ -709,13 +721,29 @@ The most critical engineering step after the POC. Manual XLSX upload is unforgea
 ### Phase 4 — Lender Ecosystem
 
 - Lender onboarding portal with policy templates
+- Risk-based pricing controls — lenders define interest bands according to proven borrower strength, loan size, and repayment risk
 - Multi-lender proof reuse — one proof package, many applications
 - Proof expiry and refresh logic
 - Accounting connectors — QuickBooks, Sage, Zoho Books
 
 ---
 
-### Phase 5 — POS & Revenue Data
+### Phase 5 — Collateralization and Risk Reduction
+
+The next major financial design problem is not just proving cash flow. It is reducing lender downside so local institutions can offer lower rates without taking blind risk.
+
+- Explore collateralization models for SMEs that do not own land or formal property
+- Support alternative collateral signals: inventory, receivables, purchase orders, POS settlement history, and locked savings
+- Design on-chain collateral vaults for digital assets or stablecoin-backed guarantees where appropriate
+- Add partial guarantee pools for lender pilots, so early loans can be de-risked while the underwriting model is validated
+- Build collateral proofs that show a borrower has sufficient pledged value without exposing the full asset inventory
+- Connect collateral strength to interest pricing: stronger proof plus stronger collateral should reduce lender risk and borrower cost
+
+The goal is not to recreate collateral-heavy banking. The goal is to make collateral more flexible, more transparent, and less exclusionary.
+
+---
+
+### Phase 6 — POS & Revenue Data
 
 - POS integrations — Moniepoint, Paystack, Flutterwave
 - Prove revenue from POS data directly, without bank statements
@@ -723,7 +751,7 @@ The most critical engineering step after the POC. Manual XLSX upload is unforgea
 
 ---
 
-### Phase 6 — Expanded Proof Types
+### Phase 7 — Expanded Proof Types
 
 - Inventory and stock level proofs
 - Tax compliance proofs (FIRS)
@@ -731,7 +759,7 @@ The most critical engineering step after the POC. Manual XLSX upload is unforgea
 
 ---
 
-### Phase 7 — Universal Financial Identity
+### Phase 8 — Universal Financial Identity
 
 - One reusable, portable financial identity accepted by every lender on the network
 - Cross-bank reputation — aggregated ZK proofs from multiple accounts and data sources

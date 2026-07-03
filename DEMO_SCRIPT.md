@@ -1,98 +1,88 @@
-# Guava — Demo Script
+# Guava — Video Script
 
-**Target length:** 3 minutes max.
-
----
-
-## OPENING (0:00 – 0:20)
-
-*Show: landing page*
-
-"Across Nigeria and emerging economies, millions of small businesses are locked out of formal credit—not because they aren't profitable, but because they can't produce the paperwork lenders require. And for those who can, getting a loan means handing over their entire financial history. Guava changes that. Businesses prove they're creditworthy using zero-knowledge proofs. Lenders get the proof they need. No financial documents ever change hands."
+**Target length:** 3 minutes.
 
 ---
 
-## LENDER SETS POLICY (0:20 – 0:50)
+## User Story (0:00-0:50)
 
-*Show: sign up as lender → lender dashboard → My Lending Profile tab*
+*Show: landing page, then borrower dashboard.*
 
-> "A lender signs up and configures their underwriting criteria — minimum revenue, minimum balance, maximum volatility, customer concentration limits. These thresholds become the public inputs committed into the ZK circuit."
+> "This is Guava, a privacy-preserving credit product for small businesses."
+
+> "Imagine a shop owner in Nigeria who needs working capital. Her business has revenue, repeat customers, and cash flow. But when she applies for a loan, the lender asks for audited accounts, certified bank statements, collateral, and guarantors."
+
+> "She may be creditworthy, but she is underdocumented. And if she does apply, she has to hand over her full financial history to every lender."
+
+> "Guava changes the question from: can you give me all your financial documents? to: can you prove you meet my lending criteria?"
+
+> "The borrower should not have to expose customer names, balances, and every transaction just to access fair credit."
+
+---
+
+## How It Works (0:50-2:05)
+
+*Show: lender signup, lender dashboard, lending criteria form.*
+
+> "First, a lender publishes their criteria: minimum revenue, average balance, volatility limits, debt ratio, and account age."
 
 *Click Save & Publish.*
 
-> "They publish. Borrowers can now see this lender and apply."
+> "Guava writes that policy to a Soroban smart contract on Stellar before any borrower is evaluated."
 
----
+*Switch to borrower dashboard.*
 
-## BORROWER UPLOADS STATEMENT (0:50 – 1:30)
+> "The borrower uploads a bank statement export. In this hackathon build, the source is XLSX. In production, this connects to open banking, POS, or accounting feeds."
 
-*Show: open new tab → sign up as borrower → borrower dashboard → My Statement tab*
+*Upload statement and compute metrics.*
 
-> "A borrower signs up and uploads their bank statement — just an XLSX export from their bank."
+> "Guava parses the transactions and computes financial metrics privately. The borrower sees their own summary, but the lender never receives the raw statement."
 
-*Upload the file.*
+*Show Browse Lenders and apply.*
 
-> "Guava parses every transaction and classifies it. Then we compute the financial metrics."
+> "The borrower sees available lenders and applies with one click."
 
-*Click Compute Metrics → financial summary appears.*
+*Switch to lender applications tab.*
 
-> "Average monthly revenue, average balance, revenue volatility, customer concentration, debt ratio, account age — all computed privately. These numbers never leave this dashboard."
-
----
-
-## BORROWER APPLIES (1:30 – 1:45)
-
-*Show: Browse Lenders tab → lender card with criteria chips*
-
-> "The borrower can see all published lenders and the exact criteria they'll be measured against."
-
-*Click Apply.*
-
-> "One click to apply. No documents submitted. The lender receives nothing yet."
-
----
-
-## LENDER GENERATES PROOF (1:45 – 2:30)
-
-*Switch back to lender tab → Applications tab*
-
-> "On the lender side, an anonymised application comes in. No name, no financials — just an applicant ID and a timestamp."
+> "On the lender side, the application is anonymized. No bank statement, no customer list, no transaction history."
 
 *Click Generate Proof.*
 
-> "The lender triggers proof generation. Watch the pipeline."
+> "The lender triggers proof generation. Guava checks whether the borrower's private metrics satisfy the lender's public thresholds."
 
-*Let the 5 steps animate — narrate each:*
+*Show proof result and Stellar section.*
 
-> "First, nargo compiles a witness from the borrower's financial metrics. Then Barretenberg derives the UltraHonk verification key. The prover constructs a 14-kilobyte cryptographic proof. bb verify confirms it's valid. And finally — the decision is recorded on Stellar."
-
-*LOAN APPROVED banner appears.*
+> "The result is a loan decision backed by cryptographic proof. The lender sees pass or fail results, proof metadata, and a Stellar transaction hash. If approved, the decision is recorded on-chain and the contract can disburse XLM."
 
 ---
 
-## SHOW THE RESULT (2:30 – 2:50)
+## The Tech (2:05-3:00)
 
-*Show: predicate list, proof metadata, Stellar section*
+*Show proof pipeline animation or proof result panel.*
 
-> "Every predicate — PASS. The proof hash, verification key hash, proof size, circuit ID. And here — a live Stellar transaction. The loan decision is stored permanently on-chain. Anyone can verify it."
+> "Under the hood, Guava uses zero-knowledge proofs. The circuit is written in Noir. The private inputs are the borrower's real financial metrics. The public inputs are the lender's published thresholds."
 
-*Click "View on Stellar Expert" → show the transaction in the browser.*
+> "The circuit checks eight underwriting predicates: revenue, balance, cash flow, volatility, concentration, debt ratio, missed repayments, and account age."
 
-> "That's a real transaction on Stellar testnet. Contract `CDY7T3...`. Immutable record."
+> "If the constraints pass, Barretenberg generates an UltraHonk proof, and the backend verifies it off-chain using `bb verify`."
+
+*Show Stellar transaction / contract section.*
+
+> "Stellar is not just a log. It is part of the trust model. The lender's policy is published before evaluation, and the final decision is recorded with the proof hash and public inputs."
+
+> "That gives both sides an auditable trail: policy published, proof generated, decision recorded, and settlement handled."
+
+*Show final approved result or landing page.*
+
+> "Guava expands financial inclusion by letting small businesses prove financial health without giving up financial privacy."
+
+> "Guava. Prove financial health, not financial history."
 
 ---
 
-## CLOSE (2:50 – 3:00)
+## Recording Notes
 
-*Show: landing page tagline*
-
-> "Guava. Prove financial health. Not financial history."
-
----
-
-## Tips Before Recording
-
-- Use two browser windows or two profiles — one logged in as lender, one as borrower
-- Make sure the backend is running and testnet is reachable before you hit record
-- The proof generation takes a few seconds — don't cut it, let the animation play
-- Zoom in on the Stellar tx hash section — that's the money shot for the judges
+- Use two browser windows: one lender, one borrower.
+- Let the proof generation animation run; it demonstrates the real pipeline.
+- Zoom in on the predicate results, proof hash, and Stellar transaction hash.
+- Keep the narration focused on financial inclusion first, then privacy, then the tech.
