@@ -37,7 +37,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
           <Shield className="h-6 w-6 text-blue-400" />
-          <span className="text-xl font-bold text-white tracking-tight">LedgerProof</span>
+          <span className="text-xl font-bold text-white tracking-tight">Guava</span>
         </div>
 
         <Card className="bg-slate-900 border-slate-800">

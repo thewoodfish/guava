@@ -1,8 +1,8 @@
-# LedgerProof — System Overview
+# Guava — System Overview
 
 ## What It Does
 
-LedgerProof lets an SME prove it meets a lender's financial criteria without handing over a single bank statement.
+Guava lets an SME prove it meets a lender's financial criteria without handing over a single bank statement.
 
 The merchant uploads PDFs once. The system extracts transactions, computes 14 financial metrics, and feeds those metrics into a zero-knowledge circuit. The circuit produces a cryptographic proof — a small blob of bytes that a lender can verify mathematically. The lender learns only whether the thresholds are satisfied. The actual numbers never leave the merchant.
 

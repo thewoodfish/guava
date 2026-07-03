@@ -1,8 +1,8 @@
-# LedgerProof
+# Guava
 
 > **Prove financial health. Not financial history.**
 
-LedgerProof is a privacy-preserving SME lending protocol. Businesses prove they meet loan criteria using zero-knowledge proofs — without handing over a single bank statement, customer name, or balance figure.
+Guava is a privacy-preserving SME lending protocol. Businesses prove they meet loan criteria using zero-knowledge proofs — without handing over a single bank statement, customer name, or balance figure.
 
 Stellar is the settlement layer for the entire underwriting process — not a logging endpoint bolted on at the end. When a lender publishes their criteria, those criteria are stored on-chain via `publish_policy()`. When a borrower's ZK proof is verified, the decision is recorded on-chain via `record_decision()`, anchored to the exact criteria the lender committed to. The chain of trust is complete, auditable, and immutable at both ends. No financial documents change hands at any point.
 
@@ -73,7 +73,7 @@ The problem isn't that these businesses lack financial health.
 
 The current system forces borrowers to compensate by repeatedly handing over their entire financial history to every lender they approach. The SME bears the cost—in time, in paperwork, and in privacy—with no guarantee of approval.
 
-**LedgerProof replaces document-based lending with proof-based lending.**
+**Guava replaces document-based lending with proof-based lending.**
 
 Instead of asking:
 
@@ -153,7 +153,7 @@ No statements. No transactions. No balances. The lender learns only whether a ma
 
 ### Borrower — Upload Statement & Compute Metrics
 
-The borrower uploads their XLSX bank statement. LedgerProof extracts every transaction, classifies it, and computes the financial summary on LedgerProof's servers. The raw figures are never shared with any lender.
+The borrower uploads their XLSX bank statement. Guava extracts every transaction, classifies it, and computes the financial summary on Guava's servers. The raw figures are never shared with any lender.
 
 ![Borrower statement upload and financial summary](frontend/assets/Screenshot%202026-06-30%20at%2001.53.27.png)
 
@@ -388,7 +388,7 @@ No amounts. No customer names. No transaction descriptions. No account numbers.
 ## Project Structure
 
 ```
-LedgerProof/
+Guava/
 ├── backend/
 │   └── src/
 │       ├── main.rs                 AppState, Axum server setup
@@ -463,27 +463,27 @@ LedgerProof/
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/thewoodfish/LedgerProof.git
-cd LedgerProof
+git clone https://github.com/thewoodfish/guava.git
+cd guava
 cp .env.example .env
 ```
 
 Edit `.env`:
 
 ```env
-DATABASE_URL=postgresql://ledgerproof:ledgerproof@localhost:5432/ledgerproof
+DATABASE_URL=postgresql://guava:guava@localhost:5432/guava
 JWT_SECRET=change-this-in-production
 CIRCUITS_DIR=./circuits/lending
 PORT=3001
-RUST_LOG=ledgerproof_backend=debug
+RUST_LOG=guava_backend=debug
 ```
 
 ### 2. Create the database
 
 ```bash
 # If PostgreSQL is running locally
-createuser -s ledgerproof
-createdb -O ledgerproof ledgerproof
+createuser -s guava
+createdb -O guava guava
 # Or with docker
 docker compose up -d postgres
 ```
@@ -499,7 +499,7 @@ set -a && source .env && set +a
 ./target/debug/server
 ```
 
-`▶ LedgerProof backend listening on 0.0.0.0:3001`
+`▶ Guava backend listening on 0.0.0.0:3001`
 
 ### 4. Start the frontend
 
@@ -628,7 +628,7 @@ POST /verify-proof     { proof_package }             → { verified: bool }
 | `STELLAR_IDENTITY` | ✓ | `stellar keys` alias used to sign transactions (e.g. `alice`) |
 | `STELLAR_NETWORK` | ✓ | `testnet` or `mainnet` |
 | `PORT` | | Backend port (default: `3001`) |
-| `RUST_LOG` | | Logging filter (e.g. `ledgerproof_backend=debug`) |
+| `RUST_LOG` | | Logging filter (e.g. `guava_backend=debug`) |
 
 ---
 
@@ -659,7 +659,7 @@ POST /verify-proof     { proof_package }             → { verified: bool }
 
 | Limitation | Why it matters | Production path |
 |---|---|---|
-| **Manual XLSX upload** | The biggest weakness of this MVP. A borrower uploads their own bank statement — which means the data is self-reported. A dishonest borrower could submit a doctored file. ZK proofs guarantee the *math* is correct, but they cannot guarantee the *input data* is authentic if that data comes from the user. | **Open Banking** (Mono, Okra, CBN Open Banking APIs) — the bank pushes the statement directly to LedgerProof via a regulated API. The borrower authorises access; the bank transmits the data. No file ever touches the borrower's hands, so forgery is structurally impossible. |
+| **Manual XLSX upload** | The biggest weakness of this MVP. A borrower uploads their own bank statement — which means the data is self-reported. A dishonest borrower could submit a doctored file. ZK proofs guarantee the *math* is correct, but they cannot guarantee the *input data* is authentic if that data comes from the user. | **Open Banking** (Mono, Okra, CBN Open Banking APIs) — the bank pushes the statement directly to Guava via a regulated API. The borrower authorises access; the bank transmits the data. No file ever touches the borrower's hands, so forgery is structurally impossible. |
 | **UX friction** | Exporting an XLSX from a Nigerian bank app, locating the file, and uploading it is not a flow that scales to 40 million MSMEs. Most borrowers will drop off. | Open Banking eliminates this entirely — one tap to authorise, automatic data pull. |
 | **Some metrics are pre-computed off-chain** | Revenue volatility, customer concentration, and debt ratio are computed by the Rust engine and passed as private witnesses. A dishonest prover could misrepresent them. | Compute inside the circuit, or attest from a trusted Open Banking oracle. |
 | **Single concurrent proof** | The proof lock serialises all proof requests. | Dedicated proving cluster at scale. |
@@ -699,7 +699,7 @@ Before building further, we talk to real people.
 The most critical engineering step after the POC. Manual XLSX upload is unforgeable in theory but self-reported in practice. Open Banking makes the data source trustworthy.
 
 - Direct bank feed via **Mono**, **Okra**, or **CBN Open Banking APIs** — the bank pushes the statement directly; no file ever passes through the borrower's hands
-- Borrower authorises with one tap; LedgerProof receives a certified transaction feed
+- Borrower authorises with one tap; Guava receives a certified transaction feed
 - Forgery becomes structurally impossible — data provenance is the bank, not the borrower
 - Support for multi-bank accounts (common among Nigerian SMEs)
 - Once the data source is trusted, the ZK proofs become fully trustworthy end-to-end

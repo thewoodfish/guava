@@ -1,4 +1,4 @@
-//! LedgerProof Lending Verifier — Soroban Smart Contract
+//! Guava Lending Verifier — Soroban Smart Contract
 //!
 //! Two on-chain operations:
 //!
@@ -124,7 +124,7 @@ impl LendingVerifier {
             &DataKey::LoanConfig(lender_id.clone()),
             &LoanConfig { amount_stroops },
         );
-        log!(&env, "LedgerProof: loan config set for lender {} — {} stroops", lender_id, amount_stroops);
+        log!(&env, "Guava: loan config set for lender {} — {} stroops", lender_id, amount_stroops);
         symbol_short!("OK")
     }
 
@@ -159,7 +159,7 @@ impl LendingVerifier {
             .persistent()
             .set(&DataKey::LenderPolicy(lender_id.clone()), &record);
 
-        log!(&env, "LedgerProof: policy published for lender {}", lender_id);
+        log!(&env, "Guava: policy published for lender {}", lender_id);
 
         symbol_short!("OK")
     }
@@ -173,7 +173,7 @@ impl LendingVerifier {
 
     /// Record a verified loan decision on-chain.
     ///
-    /// Called by the LedgerProof backend after `bb verify` confirms the
+    /// Called by the Guava backend after `bb verify` confirms the
     /// UltraHonk proof is valid. If the decision is APPROVED and the lender
     /// has configured a loan amount, XLM is disbursed to the borrower's
     /// Stellar address automatically.
@@ -231,7 +231,7 @@ impl LendingVerifier {
                         );
                         log!(
                             &env,
-                            "LedgerProof: disbursed {} stroops to borrower",
+                            "Guava: disbursed {} stroops to borrower",
                             config.amount_stroops
                         );
                     }
@@ -239,7 +239,7 @@ impl LendingVerifier {
             }
         }
 
-        log!(&env, "LedgerProof: {} decision recorded for proof {:?}", decision, proof_id);
+        log!(&env, "Guava: {} decision recorded for proof {:?}", decision, proof_id);
 
         decision
     }

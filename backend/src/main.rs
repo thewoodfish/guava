@@ -25,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "ledgerproof_backend=debug,tower_http=info".into()),
+                .unwrap_or_else(|_| "guava_backend=debug,tower_http=info".into()),
         )
         .init();
 
@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
         .layer(cors);
 
     let addr = format!("0.0.0.0:{}", config.port);
-    tracing::info!("LedgerProof backend listening on {addr}");
+    tracing::info!("Guava backend listening on {addr}");
 
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;

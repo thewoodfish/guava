@@ -167,7 +167,7 @@ export default function LenderDashboard() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-blue-400" />
-            <span className="font-bold tracking-tight">LedgerProof</span>
+            <span className="font-bold tracking-tight">Guava</span>
             <Badge variant="outline" className="ml-2 border-slate-700 text-slate-400 text-xs">Lender</Badge>
           </div>
           <div className="flex items-center gap-3">

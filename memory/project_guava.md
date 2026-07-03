@@ -1,6 +1,6 @@
 ---
-name: project-ledgerproof
-description: LedgerProof — full system built, architecture decisions, run instructions
+name: project-guava
+description: Guava — full system built, architecture decisions, run instructions
 metadata:
   type: project
 ---
@@ -18,7 +18,7 @@ Full system built end-to-end. All layers compile and circuit tests pass.
 **To run:**
 1. `docker compose up -d` (starts Postgres)
 2. `cp .env.example .env` and fill in `ANTHROPIC_API_KEY`
-3. `cargo run -p ledgerproof-backend --bin server`
+3. `cargo run -p guava-backend --bin server`
 4. `cd frontend && npm run dev`
 
 **Proof CLI flags (bb 0.87.0):**

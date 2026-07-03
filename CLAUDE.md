@@ -1,4 +1,4 @@
-# LedgerProof
+# Guava
 
 ## Privacy-Preserving Merchant Financing Using Zero-Knowledge Proofs
 
@@ -10,7 +10,7 @@ Version 1.0
 
 # Vision
 
-LedgerProof is a privacy-preserving underwriting protocol that enables businesses to prove financial health without revealing financial records.
+Guava is a privacy-preserving underwriting protocol that enables businesses to prove financial health without revealing financial records.
 
 Instead of uploading sensitive bank statements to every lender, merchants upload statements once, generate cryptographic proofs of selected financial metrics, and share only those proofs with lenders.
 
@@ -28,7 +28,7 @@ The merchant proves:
 
 without revealing the actual revenue.
 
-LedgerProof is infrastructure that sits between merchant financial records and lending platforms.
+Guava is infrastructure that sits between merchant financial records and lending platforms.
 
 ---
 
@@ -54,7 +54,7 @@ Banks only need answers to questions like:
 * Has the merchant repaid previous loans?
 * Is the business financially stable?
 
-LedgerProof allows these questions to be answered using Zero-Knowledge Proofs instead of document sharing.
+Guava allows these questions to be answered using Zero-Knowledge Proofs instead of document sharing.
 
 ---
 
@@ -148,7 +148,7 @@ Convert every statement into a universal transaction format.
 
 Different banks use different layouts.
 
-LedgerProof should normalize them into one schema.
+Guava should normalize them into one schema.
 
 Output
 
@@ -231,7 +231,7 @@ Classification can initially use an LLM before moving to deterministic rules.
 
 # Financial Metrics Engine
 
-This is the heart of LedgerProof.
+This is the heart of Guava.
 
 Input
 
@@ -563,7 +563,7 @@ Upload six months of statements.
 
 Step 2
 
-LedgerProof parses transactions.
+Guava parses transactions.
 
 ↓
 
@@ -730,7 +730,7 @@ Unit-tested formulas
 
 ## Zero-Knowledge Layer
 
-LedgerProof uses **Noir** for circuit development and **Barretenberg's UltraHonk proving system** to generate efficient zero-knowledge proofs. The system is designed to produce succinct proofs for lending predicates (e.g., `monthly_revenue >= ₦5,000,000`) while keeping all underlying financial records private.
+Guava uses **Noir** for circuit development and **Barretenberg's UltraHonk proving system** to generate efficient zero-knowledge proofs. The system is designed to produce succinct proofs for lending predicates (e.g., `monthly_revenue >= ₦5,000,000`) while keeping all underlying financial records private.
 
 ### ZK Stack
 
@@ -744,7 +744,7 @@ LedgerProof uses **Noir** for circuit development and **Barretenberg's UltraHonk
 
 ### Soroban Integration
 
-LedgerProof will leverage existing UltraHonk verification implementations for Soroban:
+Guava will leverage existing UltraHonk verification implementations for Soroban:
 
 * **UltraHonk Soroban Verifier**
 
@@ -883,7 +883,7 @@ Continue     Reject
 
 * Financial records remain entirely off-chain.
 * Only cryptographic proofs and public verification inputs are submitted to Soroban.
-* Proof generation occurs off-chain on trusted merchant infrastructure or LedgerProof servers.
+* Proof generation occurs off-chain on trusted merchant infrastructure or Guava servers.
 * Soroban is responsible only for proof verification and lending logic.
 * The architecture is modular, allowing additional Noir circuits to be added as new underwriting metrics are introduced.
 
@@ -1032,7 +1032,7 @@ One reusable financial identity accepted by multiple lenders.
 A successful demo should show the complete flow:
 
 1. Merchant uploads 6 months of bank statements.
-2. LedgerProof extracts and normalizes transactions.
+2. Guava extracts and normalizes transactions.
 3. Financial metrics are computed automatically.
 4. Zero-knowledge proofs are generated for selected lending criteria.
 5. A Stellar-based lending application verifies those proofs.
@@ -1042,7 +1042,7 @@ A successful demo should show the complete flow:
 
 # Long-Term Vision
 
-LedgerProof becomes the privacy layer for SME finance.
+Guava becomes the privacy layer for SME finance.
 
 Instead of sharing financial documents, businesses share cryptographic proofs of financial health. Lenders receive trustworthy underwriting signals, merchants retain control of their data, and financial access becomes faster, more secure, and privacy-preserving.
 

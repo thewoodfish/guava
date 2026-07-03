@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "LedgerProof — Privacy-Preserving Business Finance",
+  title: "Guava — Privacy-Preserving Business Finance",
   description: "Prove financial health without revealing financial records.",
 };
 

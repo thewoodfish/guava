@@ -1,4 +1,4 @@
-// LedgerProof Underwriting Circuit -- lending_v1
+// Guava Underwriting Circuit -- lending_v1
 //
 // Private inputs: actual financial metrics (never revealed to lender)
 // Public inputs:  thresholds configured by the lender

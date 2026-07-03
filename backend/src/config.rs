@@ -24,7 +24,7 @@ impl Config {
             database_url: required("DATABASE_URL")?,
             circuits_dir: resolve_path(&circuits_dir).to_string_lossy().into_owned(),
             jwt_secret: std::env::var("JWT_SECRET")
-                .unwrap_or_else(|_| "ledgerproof-dev-secret-2026-change-in-prod".to_string()),
+                .unwrap_or_else(|_| "guava-dev-secret-2026-change-in-prod".to_string()),
             port: std::env::var("PORT")
                 .unwrap_or_else(|_| "3001".to_string())
                 .parse()?,

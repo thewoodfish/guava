@@ -34,7 +34,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-blue-400" />
-            <span className="font-bold text-lg tracking-tight">LedgerProof</span>
+            <span className="font-bold text-lg tracking-tight">Guava</span>
           </div>
           <nav className="flex items-center gap-3">
             {user ? (
@@ -116,7 +116,7 @@ export default function Home() {
             {
               step: "01",
               title: "Upload your statement",
-              body: "Upload your bank statement once. Transactions are parsed on LedgerProof's servers — never shared with any lender.",
+              body: "Upload your bank statement once. Transactions are parsed on Guava's servers — never shared with any lender.",
               icon: <FileText className="h-7 w-7 text-blue-400" />,
             },
             {
@@ -154,7 +154,7 @@ export default function Home() {
           <div>
             <h2 className="text-3xl font-bold mb-4">14 metrics. Zero documents.</h2>
             <p className="text-slate-400 mb-6 leading-relaxed">
-              LedgerProof computes every underwriting signal lenders need — without
+              Guava computes every underwriting signal lenders need — without
               exposing a single transaction, customer name, or balance figure.
             </p>
             <div className="grid grid-cols-2 gap-2 text-sm text-slate-400">

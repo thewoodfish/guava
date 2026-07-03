@@ -4,15 +4,15 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ledgerproof
-      POSTGRES_PASSWORD: ledgerproof
-      POSTGRES_DB: ledgerproof
+      POSTGRES_USER: guava
+      POSTGRES_PASSWORD: guava
+      POSTGRES_DB: guava
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ledgerproof"]
+      test: ["CMD-SHELL", "pg_isready -U guava"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,7 +24,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: postgres://ledgerproof:ledgerproof@postgres:5432/ledgerproof
+      DATABASE_URL: postgres://guava:guava@postgres:5432/guava
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       CIRCUITS_DIR: /app/circuits/lending
       PORT: 3001

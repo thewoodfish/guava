@@ -1,4 +1,4 @@
-# LedgerProof — Demo Script
+# Guava — Demo Script
 
 **Target length:** 3 minutes max.
 
@@ -8,7 +8,7 @@
 
 *Show: landing page*
 
-"Across Nigeria and emerging economies, millions of small businesses are locked out of formal credit—not because they aren't profitable, but because they can't produce the paperwork lenders require. And for those who can, getting a loan means handing over their entire financial history. LedgerProof changes that. Businesses prove they're creditworthy using zero-knowledge proofs. Lenders get the proof they need. No financial documents ever change hands."
+"Across Nigeria and emerging economies, millions of small businesses are locked out of formal credit—not because they aren't profitable, but because they can't produce the paperwork lenders require. And for those who can, getting a loan means handing over their entire financial history. Guava changes that. Businesses prove they're creditworthy using zero-knowledge proofs. Lenders get the proof they need. No financial documents ever change hands."
 
 ---
 
@@ -32,7 +32,7 @@
 
 *Upload the file.*
 
-> "LedgerProof parses every transaction and classifies it. Then we compute the financial metrics."
+> "Guava parses every transaction and classifies it. Then we compute the financial metrics."
 
 *Click Compute Metrics → financial summary appears.*
 
@@ -86,7 +86,7 @@
 
 *Show: landing page tagline*
 
-> "LedgerProof. Prove financial health. Not financial history."
+> "Guava. Prove financial health. Not financial history."
 
 ---
 
