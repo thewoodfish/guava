@@ -8,8 +8,8 @@ use std::io::Cursor;
 ///   Date | Description / Narration | Debit | Credit | Balance
 pub fn parse(bytes: &[u8]) -> Result<Vec<RawTransaction>> {
     let cursor = Cursor::new(bytes);
-    let mut workbook: Xlsx<_> = open_workbook_from_rs(cursor)
-        .map_err(|e| anyhow!("Failed to open workbook: {e}"))?;
+    let mut workbook: Xlsx<_> =
+        open_workbook_from_rs(cursor).map_err(|e| anyhow!("Failed to open workbook: {e}"))?;
 
     let sheet_name = workbook
         .sheet_names()
@@ -33,9 +33,9 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<RawTransaction>> {
                     .map(|c| cell_to_string(c).to_lowercase())
                     .collect();
                 let has_date = lower.iter().any(|h| h.contains("date"));
-                let has_amount = lower.iter().any(|h| {
-                    h.contains("credit") || h.contains("debit") || h.contains("amount")
-                });
+                let has_amount = lower
+                    .iter()
+                    .any(|h| h.contains("credit") || h.contains("debit") || h.contains("amount"));
                 if has_date && has_amount {
                     break lower;
                 }
@@ -50,11 +50,18 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<RawTransaction>> {
             .find_map(|name| headers.iter().position(|h| h.contains(name)))
     };
 
-    let date_col    = col(&["date"]).ok_or_else(|| anyhow!("No 'date' column found"))?;
-    let desc_col    = col(&["narration", "description", "details", "particular", "remark", "memo"]);
-    let debit_col   = col(&["debit", "withdrawal", "dr"]);
-    let credit_col  = col(&["credit", "deposit", "cr"]);
-    let amount_col  = col(&["amount"]); // single-column fallback
+    let date_col = col(&["date"]).ok_or_else(|| anyhow!("No 'date' column found"))?;
+    let desc_col = col(&[
+        "narration",
+        "description",
+        "details",
+        "particular",
+        "remark",
+        "memo",
+    ]);
+    let debit_col = col(&["debit", "withdrawal", "dr"]);
+    let credit_col = col(&["credit", "deposit", "cr"]);
+    let amount_col = col(&["amount"]); // single-column fallback
     let balance_col = col(&["balance"]);
 
     if debit_col.is_none() && credit_col.is_none() && amount_col.is_none() {
@@ -94,9 +101,7 @@ pub fn parse(bytes: &[u8]) -> Result<Vec<RawTransaction>> {
             }
         };
 
-        let balance = balance_col
-            .map(|i| cell_to_f64(row, i))
-            .unwrap_or(0.0);
+        let balance = balance_col.map(|i| cell_to_f64(row, i)).unwrap_or(0.0);
 
         transactions.push(RawTransaction {
             date: date_str,
@@ -136,7 +141,10 @@ fn cell_to_string(cell: &Data) -> String {
 
 fn date_from_cell(cell: &Data) -> Option<String> {
     match cell {
-        Data::DateTime(dt) => dt.as_datetime().map(|dt| dt.date()).map(|d| format!("{}", d.format("%Y-%m-%d"))),
+        Data::DateTime(dt) => dt
+            .as_datetime()
+            .map(|dt| dt.date())
+            .map(|d| format!("{}", d.format("%Y-%m-%d"))),
         Data::DateTimeIso(s) => {
             // ISO strings are already YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS
             Some(s.get(..10).unwrap_or(s).to_string())
@@ -199,18 +207,18 @@ fn parse_date_str(s: &str) -> Option<String> {
 
 fn month_abbr(s: &str) -> Option<u32> {
     match s.to_lowercase().as_str() {
-        "jan" | "january"   => Some(1),
-        "feb" | "february"  => Some(2),
-        "mar" | "march"     => Some(3),
-        "apr" | "april"     => Some(4),
-        "may"               => Some(5),
-        "jun" | "june"      => Some(6),
-        "jul" | "july"      => Some(7),
-        "aug" | "august"    => Some(8),
+        "jan" | "january" => Some(1),
+        "feb" | "february" => Some(2),
+        "mar" | "march" => Some(3),
+        "apr" | "april" => Some(4),
+        "may" => Some(5),
+        "jun" | "june" => Some(6),
+        "jul" | "july" => Some(7),
+        "aug" | "august" => Some(8),
         "sep" | "september" => Some(9),
-        "oct" | "october"   => Some(10),
-        "nov" | "november"  => Some(11),
-        "dec" | "december"  => Some(12),
+        "oct" | "october" => Some(10),
+        "nov" | "november" => Some(11),
+        "dec" | "december" => Some(12),
         _ => None,
     }
 }

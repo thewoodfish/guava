@@ -43,9 +43,13 @@ pub async fn upload(
         return Err(AppError::BadRequest("No file provided".into()));
     }
 
-    let month = q.month.unwrap_or_else(|| chrono::Utc::now().format("%Y-%m").to_string());
+    let month = q
+        .month
+        .unwrap_or_else(|| chrono::Utc::now().format("%Y-%m").to_string());
     if !is_valid_month(&month) {
-        return Err(AppError::BadRequest("month must be in YYYY-MM format".into()));
+        return Err(AppError::BadRequest(
+            "month must be in YYYY-MM format".into(),
+        ));
     }
 
     let stmt_id: Uuid = sqlx::query_scalar(
@@ -97,11 +101,10 @@ pub async fn parse(
     State(state): State<AppState>,
     Path(stmt_id): Path<Uuid>,
 ) -> AppResult<Json<Value>> {
-    let status: Option<String> =
-        sqlx::query_scalar("SELECT status FROM statements WHERE id = $1")
-            .bind(stmt_id)
-            .fetch_optional(&state.db)
-            .await?;
+    let status: Option<String> = sqlx::query_scalar("SELECT status FROM statements WHERE id = $1")
+        .bind(stmt_id)
+        .fetch_optional(&state.db)
+        .await?;
 
     let status = status.ok_or_else(|| AppError::NotFound("Statement not found".into()))?;
     Ok(Json(json!({ "statement_id": stmt_id, "status": status })))
@@ -154,7 +157,9 @@ async fn run_parse(
 }
 
 fn parse_date(s: &str) -> anyhow::Result<NaiveDate> {
-    let formats = ["%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%d %b %Y", "%d %B %Y"];
+    let formats = [
+        "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%m/%d/%Y", "%d %b %Y", "%d %B %Y",
+    ];
     for fmt in &formats {
         if let Ok(d) = NaiveDate::parse_from_str(s.trim(), fmt) {
             return Ok(d);

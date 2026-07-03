@@ -29,7 +29,7 @@ services:
       CIRCUITS_DIR: /app/circuits/lending
       PORT: 3001
     volumes:
-      - ../circuits:/app/circuits:ro
+      - ./circuits:/app/circuits:ro
     depends_on:
       postgres:
         condition: service_healthy

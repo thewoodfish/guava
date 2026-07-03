@@ -8,7 +8,7 @@
 
 *Show: landing page*
 
-> "Every time a small business applies for a loan, they hand over everything — bank statements, customer names, transaction history, margins. Most of it is irrelevant. LedgerProof fixes that. Businesses prove they qualify using zero-knowledge proofs. Lenders get a cryptographic answer. No documents change hands."
+"Across Nigeria and emerging economies, millions of small businesses are locked out of formal credit—not because they aren't profitable, but because they can't produce the paperwork lenders require. And for those who can, getting a loan means handing over their entire financial history. LedgerProof changes that. Businesses prove they're creditworthy using zero-knowledge proofs. Lenders get the proof they need. No financial documents ever change hands."
 
 ---
 

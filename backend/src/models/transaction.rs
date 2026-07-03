@@ -9,9 +9,9 @@ pub struct Transaction {
     pub merchant_id: Uuid,
     pub date: NaiveDate,
     pub description: String,
-    pub credit: i64,   // kobo
-    pub debit: i64,    // kobo
-    pub balance: i64,  // kobo
+    pub credit: i64,  // kobo
+    pub debit: i64,   // kobo
+    pub balance: i64, // kobo
     pub category: String,
     pub created_at: DateTime<Utc>,
 }

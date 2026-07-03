@@ -94,12 +94,14 @@ pub fn evaluate(
 
     // The disbursement tx IS the same Stellar tx — the contract disburses atomically
     // within record_decision. We surface it separately in the UI for clarity.
-    let (disbursement_tx_hash, disbursement_amount_stroops) =
-        if decision == "approved" && stellar_tx_hash.is_some() && borrower_stellar_address.is_some() {
-            (stellar_tx_hash.clone(), None::<i64>) // amount fetched from contract config
-        } else {
-            (None, None)
-        };
+    let (disbursement_tx_hash, disbursement_amount_stroops) = if decision == "approved"
+        && stellar_tx_hash.is_some()
+        && borrower_stellar_address.is_some()
+    {
+        (stellar_tx_hash.clone(), None::<i64>) // amount fetched from contract config
+    } else {
+        (None, None)
+    };
 
     Ok(LoanDecision {
         application_id,

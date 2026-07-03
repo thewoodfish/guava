@@ -1,9 +1,6 @@
 use crate::{
     error::{AppError, AppResult},
-    models::{
-        metrics::LendingPolicy,
-        proof::ProofPackage,
-    },
+    models::{metrics::LendingPolicy, proof::ProofPackage},
     services::loan_engine,
     AppState,
 };
@@ -27,9 +24,9 @@ pub async fn evaluate(
     State(state): State<AppState>,
     Json(req): Json<EvaluateLoanRequest>,
 ) -> AppResult<Json<Value>> {
-    let lender_id = req.lender_id.unwrap_or_else(|| {
-        Uuid::parse_str("00000000-0000-0000-0000-000000000002").unwrap()
-    });
+    let lender_id = req
+        .lender_id
+        .unwrap_or_else(|| Uuid::parse_str("00000000-0000-0000-0000-000000000002").unwrap());
     let policy = req.policy.unwrap_or_default();
     let policy_json = serde_json::to_value(&policy).unwrap();
     let application_id = Uuid::new_v4();
@@ -97,14 +94,21 @@ pub async fn get_one(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> AppResult<Json<Value>> {
-    let row: Option<(Uuid, Uuid, Uuid, Uuid, serde_json::Value, Option<String>, Option<String>)> =
-        sqlx::query_as(
-            "SELECT id, merchant_id, lender_id, proof_id, policy, decision, reason
+    let row: Option<(
+        Uuid,
+        Uuid,
+        Uuid,
+        Uuid,
+        serde_json::Value,
+        Option<String>,
+        Option<String>,
+    )> = sqlx::query_as(
+        "SELECT id, merchant_id, lender_id, proof_id, policy, decision, reason
              FROM loan_applications WHERE id = $1",
-        )
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await?;
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await?;
 
     let (id, merchant_id, lender_id, proof_id, policy, decision, reason) =
         row.ok_or_else(|| AppError::NotFound("loan application not found".into()))?;

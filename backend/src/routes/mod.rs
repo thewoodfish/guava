@@ -7,14 +7,10 @@ mod proofs;
 mod statements;
 mod transactions;
 
-use crate::{
-    error::AppError,
-    models::user::AuthClaims,
-    AppState,
-};
+use crate::{error::AppError, models::user::AuthClaims, AppState};
 use axum::{
     extract::FromRequestParts,
-    http::{request::Parts, header::AUTHORIZATION},
+    http::{header::AUTHORIZATION, request::Parts},
     routing::{get, post},
     Router,
 };
@@ -73,7 +69,10 @@ pub fn build(state: AppState) -> Router {
         .route("/auth/stellar-address", post(auth::update_stellar_address))
         // ── Lender profiles ────────────────────────────────────────────────
         .route("/lenders", get(lenders_api::list_published))
-        .route("/lenders/me", get(lenders_api::get_my_profile).post(lenders_api::upsert_profile))
+        .route(
+            "/lenders/me",
+            get(lenders_api::get_my_profile).post(lenders_api::upsert_profile),
+        )
         .route("/lenders/me/publish", post(lenders_api::toggle_publish))
         // ── Applications ───────────────────────────────────────────────────
         .route("/applications", post(applications::create))

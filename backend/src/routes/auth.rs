@@ -18,7 +18,9 @@ pub async fn register(
         ));
     }
     if !matches!(req.role.as_str(), "borrower" | "lender") {
-        return Err(AppError::BadRequest("Role must be 'borrower' or 'lender'".into()));
+        return Err(AppError::BadRequest(
+            "Role must be 'borrower' or 'lender'".into(),
+        ));
     }
 
     let password = req.password.clone();
@@ -77,11 +79,10 @@ pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> AppResult<Json<Value>> {
-    let user: Option<User> =
-        sqlx::query_as("SELECT * FROM users WHERE username = $1")
-            .bind(req.username.trim())
-            .fetch_optional(&state.db)
-            .await?;
+    let user: Option<User> = sqlx::query_as("SELECT * FROM users WHERE username = $1")
+        .bind(req.username.trim())
+        .fetch_optional(&state.db)
+        .await?;
 
     let user = user.ok_or_else(|| AppError::Unauthorized("Invalid credentials".into()))?;
 
@@ -135,18 +136,21 @@ pub async fn update_stellar_address(
         .to_string();
 
     sqlx::query("UPDATE users SET stellar_address = $1 WHERE id = $2")
-        .bind(if address.is_empty() { None } else { Some(&address) })
+        .bind(if address.is_empty() {
+            None
+        } else {
+            Some(&address)
+        })
         .bind(auth.id)
         .execute(&state.db)
         .await?;
 
-    Ok(Json(json!({ "stellar_address": if address.is_empty() { None } else { Some(address) } })))
+    Ok(Json(
+        json!({ "stellar_address": if address.is_empty() { None } else { Some(address) } }),
+    ))
 }
 
-pub async fn me(
-    State(state): State<AppState>,
-    auth: super::AuthUser,
-) -> AppResult<Json<Value>> {
+pub async fn me(State(state): State<AppState>, auth: super::AuthUser) -> AppResult<Json<Value>> {
     let user: User = sqlx::query_as("SELECT * FROM users WHERE id = $1")
         .bind(auth.id)
         .fetch_one(&state.db)

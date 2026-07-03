@@ -1,9 +1,7 @@
 use crate::{
     error::{AppError, AppResult},
     models::{
-        application::CreateApplicationRequest,
-        lender::LenderProfile,
-        metrics::FinancialMetrics,
+        application::CreateApplicationRequest, lender::LenderProfile, metrics::FinancialMetrics,
     },
     routes::AuthUser,
     services::{loan_engine, proof_gen},
@@ -92,32 +90,41 @@ pub async fn list_mine(
     }
 
     // (id, status, decision_reason, amount_requested, created_at, decided_at, lender_name)
-    let rows: Vec<(Uuid, String, Option<String>, Option<i64>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, String)> =
-        sqlx::query_as(
-            "SELECT la.id, la.status, la.decision_reason, la.amount_requested,
+    let rows: Vec<(
+        Uuid,
+        String,
+        Option<String>,
+        Option<i64>,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+        String,
+    )> = sqlx::query_as(
+        "SELECT la.id, la.status, la.decision_reason, la.amount_requested,
                     la.created_at, la.decided_at, lp.display_name
              FROM loan_applications la
              JOIN lender_profiles lp ON lp.id = la.lender_profile_id
              WHERE la.borrower_id = $1
              ORDER BY la.created_at DESC",
-        )
-        .bind(auth.id)
-        .fetch_all(&state.db)
-        .await?;
+    )
+    .bind(auth.id)
+    .fetch_all(&state.db)
+    .await?;
 
     let out = rows
         .into_iter()
-        .map(|(id, status, reason, amount, created_at, decided_at, lender_name)| {
-            json!({
-                "id": id,
-                "status": status,
-                "decision_reason": reason,
-                "amount_requested": amount,
-                "created_at": created_at,
-                "decided_at": decided_at,
-                "lender": { "display_name": lender_name },
-            })
-        })
+        .map(
+            |(id, status, reason, amount, created_at, decided_at, lender_name)| {
+                json!({
+                    "id": id,
+                    "status": status,
+                    "decision_reason": reason,
+                    "amount_requested": amount,
+                    "created_at": created_at,
+                    "decided_at": decided_at,
+                    "lender": { "display_name": lender_name },
+                })
+            },
+        )
         .collect();
 
     Ok(Json(out))
@@ -133,33 +140,42 @@ pub async fn list_for_lender(
     }
 
     // (id, status, decision_reason, amount_requested, created_at, decided_at, borrower_id)
-    let rows: Vec<(Uuid, String, Option<String>, Option<i64>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, Uuid)> =
-        sqlx::query_as(
-            "SELECT la.id, la.status, la.decision_reason, la.amount_requested,
+    let rows: Vec<(
+        Uuid,
+        String,
+        Option<String>,
+        Option<i64>,
+        chrono::DateTime<chrono::Utc>,
+        Option<chrono::DateTime<chrono::Utc>>,
+        Uuid,
+    )> = sqlx::query_as(
+        "SELECT la.id, la.status, la.decision_reason, la.amount_requested,
                     la.created_at, la.decided_at, la.borrower_id
              FROM loan_applications la
              JOIN lender_profiles lp ON lp.id = la.lender_profile_id
              WHERE lp.user_id = $1
              ORDER BY la.created_at DESC",
-        )
-        .bind(auth.id)
-        .fetch_all(&state.db)
-        .await?;
+    )
+    .bind(auth.id)
+    .fetch_all(&state.db)
+    .await?;
 
     let out = rows
         .into_iter()
-        .map(|(id, status, reason, amount, created_at, decided_at, borrower_id)| {
-            let anon = &borrower_id.to_string()[..8];
-            json!({
-                "id": id,
-                "borrower_ref": format!("Applicant #{}", anon),
-                "status": status,
-                "decision_reason": reason,
-                "amount_requested": amount,
-                "created_at": created_at,
-                "decided_at": decided_at,
-            })
-        })
+        .map(
+            |(id, status, reason, amount, created_at, decided_at, borrower_id)| {
+                let anon = &borrower_id.to_string()[..8];
+                json!({
+                    "id": id,
+                    "borrower_ref": format!("Applicant #{}", anon),
+                    "status": status,
+                    "decision_reason": reason,
+                    "amount_requested": amount,
+                    "created_at": created_at,
+                    "decided_at": decided_at,
+                })
+            },
+        )
         .collect();
 
     Ok(Json(out))
@@ -196,12 +212,11 @@ pub async fn verify(
         return Err(AppError::BadRequest("Application already processed".into()));
     }
 
-    let metrics: FinancialMetrics =
-        sqlx::query_as("SELECT * FROM financial_metrics WHERE id = $1")
-            .bind(metrics_id)
-            .fetch_optional(&state.db)
-            .await?
-            .ok_or_else(|| AppError::NotFound("Metrics not found".into()))?;
+    let metrics: FinancialMetrics = sqlx::query_as("SELECT * FROM financial_metrics WHERE id = $1")
+        .bind(metrics_id)
+        .fetch_optional(&state.db)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Metrics not found".into()))?;
 
     let lender_profile: LenderProfile =
         sqlx::query_as("SELECT * FROM lender_profiles WHERE id = $1")
@@ -290,7 +305,10 @@ pub async fn verify(
     let vk_hash_preview = &package.vk_hex[..package.vk_hex.len().min(32)];
 
     let stellar_explorer = decision.stellar_tx_hash.as_deref().map(|h| {
-        format!("https://stellar.expert/explorer/{}/tx/{}", state.config.stellar_network, h)
+        format!(
+            "https://stellar.expert/explorer/{}/tx/{}",
+            state.config.stellar_network, h
+        )
     });
 
     let disbursement = if decision.disbursement_tx_hash.is_some() {

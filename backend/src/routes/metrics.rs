@@ -13,16 +13,12 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 
 /// POST /metrics — compute + persist metrics for current user
-pub async fn compute(
-    State(state): State<AppState>,
-    auth: AuthUser,
-) -> AppResult<Json<Value>> {
-    let transactions: Vec<Transaction> = sqlx::query_as(
-        "SELECT * FROM transactions WHERE merchant_id = $1 ORDER BY date ASC",
-    )
-    .bind(auth.id)
-    .fetch_all(&state.db)
-    .await?;
+pub async fn compute(State(state): State<AppState>, auth: AuthUser) -> AppResult<Json<Value>> {
+    let transactions: Vec<Transaction> =
+        sqlx::query_as("SELECT * FROM transactions WHERE merchant_id = $1 ORDER BY date ASC")
+            .bind(auth.id)
+            .fetch_all(&state.db)
+            .await?;
 
     if transactions.is_empty() {
         return Err(AppError::BadRequest(
@@ -30,8 +26,7 @@ pub async fn compute(
         ));
     }
 
-    let metrics = metrics_svc::compute(auth.id, &transactions)
-        .map_err(AppError::Internal)?;
+    let metrics = metrics_svc::compute(auth.id, &transactions).map_err(AppError::Internal)?;
 
     let id: Uuid = sqlx::query_scalar(
         r#"INSERT INTO financial_metrics (

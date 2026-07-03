@@ -33,14 +33,13 @@ pub async fn generate(
     auth: AuthUser,
     Json(req): Json<GenerateProofRequest>,
 ) -> AppResult<Json<Value>> {
-    let metrics: FinancialMetrics = sqlx::query_as(
-        "SELECT * FROM financial_metrics WHERE id = $1 AND merchant_id = $2",
-    )
-    .bind(req.metrics_id)
-    .bind(auth.id)
-    .fetch_optional(&state.db)
-    .await?
-    .ok_or_else(|| AppError::NotFound("metrics not found".into()))?;
+    let metrics: FinancialMetrics =
+        sqlx::query_as("SELECT * FROM financial_metrics WHERE id = $1 AND merchant_id = $2")
+            .bind(req.metrics_id)
+            .bind(auth.id)
+            .fetch_optional(&state.db)
+            .await?
+            .ok_or_else(|| AppError::NotFound("metrics not found".into()))?;
 
     let proof_id = Uuid::new_v4();
     let circuits_dir = state.config.circuits_dir.clone();

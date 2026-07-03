@@ -9,9 +9,9 @@ pub struct FinancialMetrics {
     pub merchant_id: Uuid,
     pub computed_at: DateTime<Utc>,
 
-    pub monthly_revenue: Value,         // {"2024-01": 500000000}
-    pub avg_monthly_revenue: i64,       // kobo
-    pub revenue_volatility_bps: i32,    // basis points (100 bps = 1%)
+    pub monthly_revenue: Value,      // {"2024-01": 500000000}
+    pub avg_monthly_revenue: i64,    // kobo
+    pub revenue_volatility_bps: i32, // basis points (100 bps = 1%)
 
     pub monthly_cash_flow: Value,
     pub positive_cash_flow_months: i32,
@@ -59,12 +59,12 @@ pub struct LendingPolicy {
 impl Default for LendingPolicy {
     fn default() -> Self {
         Self {
-            required_monthly_revenue: Some(500_000_000),   // ₦5M in kobo
-            required_avg_balance: Some(50_000_000),        // ₦500k in kobo
+            required_monthly_revenue: Some(500_000_000), // ₦5M in kobo
+            required_avg_balance: Some(50_000_000),      // ₦500k in kobo
             required_positive_cash_flow_months: Some(4),
-            max_revenue_volatility_bps: Some(1500),        // 15%
-            max_customer_concentration_bps: Some(2500),    // 25%
-            max_debt_ratio_bps: Some(2500),                // 25%
+            max_revenue_volatility_bps: Some(1500),     // 15%
+            max_customer_concentration_bps: Some(2500), // 25%
+            max_debt_ratio_bps: Some(2500),             // 25%
             require_no_missed_repayments: Some(true),
             required_account_age_months: Some(12),
         }

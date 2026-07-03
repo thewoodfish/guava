@@ -3,11 +3,7 @@ use crate::models::{
     proof::{ProofPackage, ProvenPredicate, PublicInputs},
 };
 use anyhow::{anyhow, Result};
-use std::{
-    fs,
-    path::Path,
-    process::Command,
-};
+use std::{fs, path::Path, process::Command};
 use uuid::Uuid;
 
 /// Generate a UltraHonk ZK proof for the given metrics against a lending policy.
@@ -56,9 +52,12 @@ pub fn generate(
     let vk_out = Command::new("bb")
         .args([
             "write_vk",
-            "--scheme", "ultra_honk",
-            "-b", circuit_json.to_str().unwrap(),
-            "-o", vk_path.to_str().unwrap(),
+            "--scheme",
+            "ultra_honk",
+            "-b",
+            circuit_json.to_str().unwrap(),
+            "-o",
+            vk_path.to_str().unwrap(),
         ])
         .current_dir(circuit_path)
         .output()
@@ -75,10 +74,14 @@ pub fn generate(
     let prove_out = Command::new("bb")
         .args([
             "prove",
-            "--scheme", "ultra_honk",
-            "-b", circuit_json.to_str().unwrap(),
-            "-w", witness_path.to_str().unwrap(),
-            "-o", proof_path.to_str().unwrap(),
+            "--scheme",
+            "ultra_honk",
+            "-b",
+            circuit_json.to_str().unwrap(),
+            "-w",
+            witness_path.to_str().unwrap(),
+            "-o",
+            proof_path.to_str().unwrap(),
         ])
         .current_dir(circuit_path)
         .output()
@@ -90,12 +93,10 @@ pub fn generate(
     }
 
     // bb writes proof to target/proof/proof and public inputs to target/proof/public_inputs
-    let proof_bytes = fs::read(proof_path.join("proof"))
-        .map_err(|e| anyhow!("Failed to read proof: {e}"))?;
-    let vk_bytes = fs::read(vk_path.join("vk"))
-        .map_err(|e| anyhow!("Failed to read vk: {e}"))?;
-    let pub_inputs_bytes = fs::read(proof_path.join("public_inputs"))
-        .unwrap_or_default();
+    let proof_bytes =
+        fs::read(proof_path.join("proof")).map_err(|e| anyhow!("Failed to read proof: {e}"))?;
+    let vk_bytes = fs::read(vk_path.join("vk")).map_err(|e| anyhow!("Failed to read vk: {e}"))?;
+    let pub_inputs_bytes = fs::read(proof_path.join("public_inputs")).unwrap_or_default();
 
     // Clean up Prover.toml (contains private data)
     let _ = fs::remove_file(&prover_toml_path);
@@ -122,12 +123,11 @@ pub fn verify(package: &ProofPackage, circuits_dir: &str) -> Result<bool> {
         .map_err(|e| anyhow!("circuits_dir '{}' not found: {e}", circuits_dir))?;
     let circuit_path = circuit_path.as_path();
 
-    let proof_bytes = hex::decode(&package.proof_hex)
-        .map_err(|e| anyhow!("Invalid proof hex: {e}"))?;
-    let vk_bytes = hex::decode(&package.vk_hex)
-        .map_err(|e| anyhow!("Invalid vk hex: {e}"))?;
-    let pub_inputs_bytes = hex::decode(&package.pub_inputs_hex)
-        .map_err(|e| anyhow!("Invalid pub_inputs hex: {e}"))?;
+    let proof_bytes =
+        hex::decode(&package.proof_hex).map_err(|e| anyhow!("Invalid proof hex: {e}"))?;
+    let vk_bytes = hex::decode(&package.vk_hex).map_err(|e| anyhow!("Invalid vk hex: {e}"))?;
+    let pub_inputs_bytes =
+        hex::decode(&package.pub_inputs_hex).map_err(|e| anyhow!("Invalid pub_inputs hex: {e}"))?;
 
     let tmp = tempfile::tempdir()?;
     let proof_path = tmp.path().join("proof");
@@ -140,10 +140,14 @@ pub fn verify(package: &ProofPackage, circuits_dir: &str) -> Result<bool> {
     let out = Command::new("bb")
         .args([
             "verify",
-            "--scheme", "ultra_honk",
-            "-k", vk_path.to_str().unwrap(),
-            "-p", proof_path.to_str().unwrap(),
-            "-i", pub_inputs_path.to_str().unwrap(),
+            "--scheme",
+            "ultra_honk",
+            "-k",
+            vk_path.to_str().unwrap(),
+            "-p",
+            proof_path.to_str().unwrap(),
+            "-i",
+            pub_inputs_path.to_str().unwrap(),
         ])
         .current_dir(circuit_path)
         .output()
@@ -158,13 +162,11 @@ fn public_inputs(policy: &LendingPolicy) -> PublicInputs {
     PublicInputs {
         required_monthly_revenue: policy.required_monthly_revenue.unwrap_or(0) as u64,
         required_avg_balance: policy.required_avg_balance.unwrap_or(0) as u64,
-        required_positive_cash_flow_months: policy
-            .required_positive_cash_flow_months
-            .unwrap_or(0) as u64,
+        required_positive_cash_flow_months: policy.required_positive_cash_flow_months.unwrap_or(0)
+            as u64,
         max_revenue_volatility_bps: policy.max_revenue_volatility_bps.unwrap_or(10_000) as u64,
-        max_customer_concentration_bps: policy
-            .max_customer_concentration_bps
-            .unwrap_or(10_000) as u64,
+        max_customer_concentration_bps: policy.max_customer_concentration_bps.unwrap_or(10_000)
+            as u64,
         max_debt_ratio_bps: policy.max_debt_ratio_bps.unwrap_or(10_000) as u64,
         require_no_missed_repayments: if policy.require_no_missed_repayments == Some(true) {
             1
@@ -190,11 +192,9 @@ fn build_prover_toml(metrics: &FinancialMetrics, pub_inputs: &PublicInputs) -> S
         months.push(format!("0000-{:02}", months.len() + 1));
     }
 
-    let revenue_arr = months_array(
-        &months,
-        metrics.monthly_revenue.as_object(),
-        |v| v.as_i64().unwrap_or(0) as u64,
-    );
+    let revenue_arr = months_array(&months, metrics.monthly_revenue.as_object(), |v| {
+        v.as_i64().unwrap_or(0) as u64
+    });
 
     let expenses_arr: Vec<u64> = months
         .iter()
@@ -242,7 +242,11 @@ required_account_age_months = {req_age}
         vol = metrics.revenue_volatility_bps,
         cust = metrics.customer_concentration_bps,
         debt = metrics.debt_ratio_bps,
-        missed = if metrics.has_missed_repayments { 1u64 } else { 0u64 },
+        missed = if metrics.has_missed_repayments {
+            1u64
+        } else {
+            0u64
+        },
         age = metrics.account_age_months,
         req_rev = pub_inputs.required_monthly_revenue,
         req_bal = pub_inputs.required_avg_balance,
@@ -262,11 +266,7 @@ fn months_array(
 ) -> Vec<u64> {
     months
         .iter()
-        .map(|m| {
-            map.and_then(|o| o.get(m))
-                .map(|v| extract(v))
-                .unwrap_or(0)
-        })
+        .map(|m| map.and_then(|o| o.get(m)).map(|v| extract(v)).unwrap_or(0))
         .collect()
 }
 
@@ -295,24 +295,42 @@ fn build_predicates(metrics: &FinancialMetrics, policy: &LendingPolicy) -> Vec<P
     }
 
     if policy.required_monthly_revenue.is_some() {
-        pred!("avg monthly revenue", "Monthly revenue meets minimum threshold");
+        pred!(
+            "avg monthly revenue",
+            "Monthly revenue meets minimum threshold"
+        );
     }
     if policy.required_avg_balance.is_some() {
         pred!("avg balance", "Average balance meets minimum threshold");
     }
     if policy.required_positive_cash_flow_months.is_some() {
-        pred!("positive cash flow months", "Sufficient months of positive cash flow");
+        pred!(
+            "positive cash flow months",
+            "Sufficient months of positive cash flow"
+        );
     }
     if policy.max_revenue_volatility_bps.is_some() {
-        pred!("revenue volatility", "Revenue volatility within acceptable range");
+        pred!(
+            "revenue volatility",
+            "Revenue volatility within acceptable range"
+        );
     }
     if policy.max_customer_concentration_bps.is_some() {
-        pred!("customer concentration", "No single customer dominates revenue");
+        pred!(
+            "customer concentration",
+            "No single customer dominates revenue"
+        );
     }
     if policy.max_debt_ratio_bps.is_some() {
-        pred!("debt ratio", "Debt payments within acceptable ratio of revenue");
+        pred!(
+            "debt ratio",
+            "Debt payments within acceptable ratio of revenue"
+        );
     }
-    pred!("missed loan repayments", "No missed loan repayments detected");
+    pred!(
+        "missed loan repayments",
+        "No missed loan repayments detected"
+    );
     if policy.required_account_age_months.is_some() {
         pred!("account age", "Account has sufficient history");
     }

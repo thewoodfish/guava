@@ -14,10 +14,7 @@ pub fn compute(merchant_id: Uuid, transactions: &[Transaction]) -> Result<Financ
     });
 
     let monthly_expenses = monthly_sum(transactions, |t| {
-        matches!(
-            t.category.as_str(),
-            "expense" | "tax" | "loan_repayment"
-        ) && t.debit > 0
+        matches!(t.category.as_str(), "expense" | "tax" | "loan_repayment") && t.debit > 0
     });
 
     let monthly_debt_payments = monthly_sum(transactions, |t| {
@@ -108,10 +105,7 @@ pub fn compute(merchant_id: Uuid, transactions: &[Transaction]) -> Result<Financ
     })
 }
 
-pub fn check_policy(
-    metrics: &FinancialMetrics,
-    policy: &LendingPolicy,
-) -> (bool, Vec<String>) {
+pub fn check_policy(metrics: &FinancialMetrics, policy: &LendingPolicy) -> (bool, Vec<String>) {
     let mut failures = Vec::new();
 
     if let Some(required) = policy.required_monthly_revenue {
@@ -234,8 +228,7 @@ fn coefficient_of_variation_bps(map: &HashMap<String, i64>) -> i32 {
     if mean == 0.0 {
         return 0;
     }
-    let variance =
-        values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+    let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
     let std_dev = variance.sqrt();
     ((std_dev / mean) * 10_000.0) as i32
 }
